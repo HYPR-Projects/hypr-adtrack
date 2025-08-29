@@ -9,6 +9,8 @@ export interface ReportEvent {
   campaignStatus: string;
   campaignDescription: string;
   campaignTags: string;
+  tagId?: string;
+  tagTitle?: string;
   pageViews: number;
   ctaClicks: number;
   pinClicks: number;
@@ -20,9 +22,10 @@ interface UseReportEventsProps {
   selectedCampaignIds: string[];
   dateRange: { from: Date; to: Date } | undefined;
   groupBy: 'day' | 'week' | 'month';
+  selectedDimensions: string[];
 }
 
-export const useReportEvents = ({ selectedCampaignIds, dateRange, groupBy }: UseReportEventsProps) => {
+export const useReportEvents = ({ selectedCampaignIds, dateRange, groupBy, selectedDimensions }: UseReportEventsProps) => {
   const [data, setData] = useState<ReportEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -95,8 +98,9 @@ export const useReportEvents = ({ selectedCampaignIds, dateRange, groupBy }: Use
 
         if (eventsError) throw eventsError;
 
-        // 4. Aggregate events by campaign and time period
+        // 4. Aggregate events by campaign/tag and time period
         const aggregateMap = new Map<string, ReportEvent>();
+        const shouldBreakByTags = selectedDimensions.includes('campaign_tags');
 
         eventsData?.forEach(event => {
           const campaign = tagToCampaignMap.get(event.tag_id);
@@ -124,7 +128,17 @@ export const useReportEvents = ({ selectedCampaignIds, dateRange, groupBy }: Use
               periodFormat = format(periodStart, 'dd/MM/yyyy');
           }
 
-          const key = `${campaign.id}-${periodStart.getTime()}`;
+          // Find the specific tag for this event
+          const eventTag = campaign.tags?.find((tag: any) => tag.id === event.tag_id);
+          
+          let key: string;
+          if (shouldBreakByTags && eventTag) {
+            // Group by campaign, period, and tag
+            key = `${campaign.id}-${periodStart.getTime()}-${eventTag.id}`;
+          } else {
+            // Group by campaign and period only
+            key = `${campaign.id}-${periodStart.getTime()}`;
+          }
           
           if (!aggregateMap.has(key)) {
             aggregateMap.set(key, {
@@ -133,7 +147,9 @@ export const useReportEvents = ({ selectedCampaignIds, dateRange, groupBy }: Use
               campaignName: campaign.name,
               campaignStatus: campaign.status || 'active',
               campaignDescription: campaign.description || '',
-              campaignTags: campaign.tags?.map((tag: any) => tag.title).join(', ') || '',
+              campaignTags: shouldBreakByTags && eventTag ? eventTag.title : campaign.tags?.map((tag: any) => tag.title).join(', ') || '',
+              tagId: shouldBreakByTags && eventTag ? eventTag.id : undefined,
+              tagTitle: shouldBreakByTags && eventTag ? eventTag.title : undefined,
               pageViews: 0,
               ctaClicks: 0,
               pinClicks: 0,
@@ -186,7 +202,7 @@ export const useReportEvents = ({ selectedCampaignIds, dateRange, groupBy }: Use
     };
 
     fetchReportData();
-  }, [selectedCampaignIds, effectiveDateRange, groupBy]);
+  }, [selectedCampaignIds, effectiveDateRange, groupBy, selectedDimensions]);
 
   return { data, loading, error };
 };

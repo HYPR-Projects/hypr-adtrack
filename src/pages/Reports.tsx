@@ -78,7 +78,8 @@ const Reports = () => {
     selectedCampaignIds: reportConfig.selectedCampaigns,
     dateRange: reportConfig.dateRange?.from && reportConfig.dateRange?.to ? 
       { from: reportConfig.dateRange.from, to: reportConfig.dateRange.to } : undefined,
-    groupBy: reportConfig.groupBy
+    groupBy: reportConfig.groupBy,
+    selectedDimensions: reportConfig.dimensions
   });
 
   // Filter campaigns based on search

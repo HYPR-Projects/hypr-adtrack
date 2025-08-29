@@ -133,11 +133,11 @@ const CampaignDetails = () => {
               acc[date].cta_clicks++;
               break;
             case 'pin_click':
-            case 'view':
             case 'map_pin':
               acc[date].pin_clicks++;
               break;
             case 'page_view':
+            case 'view':
               acc[date].page_views++;
               break;
           }

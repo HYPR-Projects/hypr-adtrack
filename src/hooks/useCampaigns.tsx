@@ -118,11 +118,11 @@ export const useCampaigns = () => {
                     metrics.cta_clicks++;
                     break;
                   case 'pin_click':
-                  case 'view':
                   case 'map_pin':
                     metrics.pin_clicks++;
                     break;
                   case 'page_view':
+                  case 'view':
                     metrics.page_views++;
                     break;
                 }

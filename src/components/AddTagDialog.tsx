@@ -7,14 +7,14 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Plus } from "lucide-react";
 
 interface AddTagDialogProps {
-  onTagAdded: (title: string, type: 'cta' | 'pin') => void;
+  onTagAdded: (title: string, type: 'click-button' | 'pin' | 'page-view') => void;
   campaignName: string;
 }
 
 const AddTagDialog = ({ onTagAdded, campaignName }: AddTagDialogProps) => {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
-  const [type, setType] = useState<'cta' | 'pin'>('cta');
+  const [type, setType] = useState<'click-button' | 'pin' | 'page-view'>('click-button');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,7 +24,7 @@ const AddTagDialog = ({ onTagAdded, campaignName }: AddTagDialogProps) => {
     
     // Reset form
     setTitle("");
-    setType('cta');
+    setType('click-button');
     setOpen(false);
   };
 
@@ -60,17 +60,23 @@ const AddTagDialog = ({ onTagAdded, campaignName }: AddTagDialogProps) => {
           
           <div className="space-y-2">
             <Label>Tipo da Tag *</Label>
-            <RadioGroup value={type} onValueChange={(value) => setType(value as 'cta' | 'pin')}>
+            <RadioGroup value={type} onValueChange={(value) => setType(value as 'click-button' | 'pin' | 'page-view')}>
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="cta" id="cta" />
-                <Label htmlFor="cta" className="font-normal">
-                  CTA - Botões de ação, banners, links clicáveis
+                <RadioGroupItem value="click-button" id="click-button" />
+                <Label htmlFor="click-button" className="font-normal">
+                  Click Button - Botões de ação, banners, links clicáveis
                 </Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="pin" id="pin" />
                 <Label htmlFor="pin" className="font-normal">
                   PIN - Pontos no mapa, localizações, marcadores
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="page-view" id="page-view" />
+                <Label htmlFor="page-view" className="font-normal">
+                  Page View - Visualizações de página, impressões
                 </Label>
               </div>
             </RadioGroup>

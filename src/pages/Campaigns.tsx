@@ -14,7 +14,7 @@ import { Link } from "react-router-dom";
 // Types
 interface Tag {
   id: string;
-  type: 'cta' | 'pin';
+  type: 'click-button' | 'pin' | 'page-view';
   title: string;
   code: string;
   created_at: string;
@@ -38,7 +38,7 @@ const initialCampaigns = [
     tags: [
       {
         id: "1",
-        type: "cta" as const,
+        type: "click-button" as const,
         title: "Botão Principal",
         code: "bf2024_cta_x9k2m",
         created_at: "2024-01-10"
@@ -68,7 +68,7 @@ const initialCampaigns = [
     tags: [
       {
         id: "3",
-        type: "cta" as const,
+        type: "click-button" as const,
         title: "Banner Natalino",
         code: "natal24_cta_k8j5l",
         created_at: "2024-11-20"

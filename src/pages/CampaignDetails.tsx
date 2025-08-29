@@ -16,7 +16,7 @@ import AddTagDialog from "@/components/AddTagDialog";
 // Types
 interface Tag {
   id: string;
-  type: 'cta' | 'pin';
+  type: 'click-button' | 'pin' | 'page-view';
   title: string;
   code: string;
   created_at: string;
@@ -52,7 +52,7 @@ const mockCampaigns = [
     tags: [
       {
         id: "1",
-        type: "cta" as const,
+        type: "click-button" as const,
         title: "Botão Principal",
         code: "bf2024_cta_x9k2m",
         created_at: "2024-01-10"
@@ -83,7 +83,7 @@ const mockCampaigns = [
     tags: [
       {
         id: "3",
-        type: "cta" as const,
+        type: "click-button" as const,
         title: "Banner Natalino",
         code: "natal24_cta_k8j5l",
         created_at: "2024-11-20"
@@ -155,7 +155,7 @@ const CampaignDetails = () => {
   })
 })`;
 
-  const addTag = (title: string, type: 'cta' | 'pin') => {
+  const addTag = (title: string, type: 'click-button' | 'pin' | 'page-view') => {
     const newTag: Tag = {
       id: Date.now().toString(),
       type,
@@ -346,9 +346,10 @@ const CampaignDetails = () => {
                       <div className="flex items-center gap-3">
                         <Badge 
                           variant="outline" 
-                          className={tag.type === 'cta' ? 
-                            "bg-blue-50 text-blue-700 border-blue-200" : 
-                            "bg-green-50 text-green-700 border-green-200"
+                          className={
+                            tag.type === 'click-button' ? "bg-blue-50 text-blue-700 border-blue-200" : 
+                            tag.type === 'pin' ? "bg-green-50 text-green-700 border-green-200" :
+                            "bg-purple-50 text-purple-700 border-purple-200"
                           }
                         >
                           {tag.type.toUpperCase()}

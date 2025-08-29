@@ -46,14 +46,13 @@ export const useCampaigns = () => {
     try {
       setLoading(true);
       
-      // Fetch campaigns with tags
+      // Fetch all campaigns with tags (shared workspace)
       const { data: campaignsData, error: campaignsError } = await supabase
         .from('campaigns')
         .select(`
           *,
           tags (*)
         `)
-        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (campaignsError) throw campaignsError;

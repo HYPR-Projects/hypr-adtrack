@@ -185,7 +185,7 @@ const CampaignCard = ({ campaign }: { campaign: any }) => {
   );
 };
 
-const CreateCampaignDialog = ({ onCampaignCreated }: { onCampaignCreated: () => void }) => {
+const CreateCampaignDialog = ({ onCampaignCreated }: { onCampaignCreated: (campaign: any) => void }) => {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -199,6 +199,26 @@ const CreateCampaignDialog = ({ onCampaignCreated }: { onCampaignCreated: () => 
     const ctaTag = generateTag(name, 'cta');
     const pinTag = generateTag(name, 'pin');
     
+    // Criar nova campanha
+    const newCampaign = {
+      id: Date.now().toString(),
+      name: name,
+      description: description,
+      status: "active" as const,
+      start_date: new Date().toISOString().split('T')[0],
+      end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      created_at: new Date().toISOString().split('T')[0],
+      metrics: {
+        cta_clicks: 0,
+        pin_clicks: 0,
+        total_7d: 0
+      },
+      tags: {
+        cta: ctaTag,
+        pin: pinTag
+      }
+    };
+    
     toast({
       title: "Campanha criada!",
       description: `Tags geradas: ${ctaTag}, ${pinTag}`,
@@ -208,7 +228,7 @@ const CreateCampaignDialog = ({ onCampaignCreated }: { onCampaignCreated: () => 
     setName("");
     setDescription("");
     setOpen(false);
-    onCampaignCreated();
+    onCampaignCreated(newCampaign);
   };
 
   return (
@@ -262,11 +282,15 @@ const CreateCampaignDialog = ({ onCampaignCreated }: { onCampaignCreated: () => 
 };
 
 const Campaigns = () => {
-  const [campaigns] = useState(mockCampaigns);
+  const [campaigns, setCampaigns] = useState(mockCampaigns);
   
   const totalCampaigns = campaigns.length;
   const activeCampaigns = campaigns.filter(c => c.status === 'active').length;
   const totalClicks = campaigns.reduce((sum, c) => sum + c.metrics.cta_clicks + c.metrics.pin_clicks, 0);
+
+  const handleCampaignCreated = (newCampaign: any) => {
+    setCampaigns(prev => [...prev, newCampaign]);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -287,7 +311,7 @@ const Campaigns = () => {
                 <FileText className="w-4 h-4" />
                 Relatórios (Em breve)
               </Button>
-              <CreateCampaignDialog onCampaignCreated={() => window.location.reload()} />
+              <CreateCampaignDialog onCampaignCreated={handleCampaignCreated} />
             </div>
           </div>
         </div>
@@ -355,7 +379,7 @@ const Campaigns = () => {
                   <BarChart3 className="w-12 h-12 mx-auto mb-2 opacity-40" />
                   <p>Nenhuma campanha criada ainda</p>
                 </div>
-                <CreateCampaignDialog onCampaignCreated={() => window.location.reload()} />
+                <CreateCampaignDialog onCampaignCreated={handleCampaignCreated} />
               </CardContent>
             </Card>
           ) : (

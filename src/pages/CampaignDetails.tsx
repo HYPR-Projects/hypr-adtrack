@@ -82,11 +82,13 @@ const CampaignDetails = () => {
           }
 
           switch (event.event_type) {
+            case 'click':
             case 'click_button':
             case 'cta_click':
               acc[date].cta_clicks++;
               break;
             case 'pin_click':
+            case 'view':
             case 'map_pin':
               acc[date].pin_clicks++;
               break;
@@ -162,15 +164,13 @@ const CampaignDetails = () => {
     `https://wmwpzmpgaokjplhyyktv.supabase.co/functions/v1/track-event?tag=${tag}&cb=` + "${timestamp}";
 
   const getJsSnippet = (tag: string) => 
-    `fetch("https://wmwpzmpgaokjplhyyktv.supabase.co/functions/v1/track-event", {
+    `fetch("https://wmwpzmpgaokjplhyyktv.supabase.co/functions/v1/track-event?tag=${tag}", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
-  mode: "no-cors",
   body: JSON.stringify({
-    tag: "${tag}",
-    metadata: { ua: navigator.userAgent }
+    metadata: { ua: navigator.userAgent, timestamp: Date.now() }
   })
-})`;
+}).catch(err => console.log('Tracking error:', err))`;
 
   const addTag = async (title: string, type: 'click-button' | 'pin' | 'page-view') => {
     const result = await createTag({

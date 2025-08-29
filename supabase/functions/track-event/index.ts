@@ -16,10 +16,21 @@ Deno.serve(async (req) => {
 
   try {
     const url = new URL(req.url)
-    const tagCode = url.searchParams.get('tag')
+    let tagCode = url.searchParams.get('tag')
+    
+    // If tag not in URL, try to get it from POST body
+    if (!tagCode && req.method === 'POST') {
+      try {
+        const body = await req.json()
+        tagCode = body.tag
+      } catch (e) {
+        // If JSON parsing fails, continue with null tagCode
+        console.log('Failed to parse JSON body:', e)
+      }
+    }
     
     if (!tagCode) {
-      console.log('Missing tag parameter')
+      console.log('Missing tag parameter in both URL and body')
       return new Response('Missing tag parameter', { 
         status: 400, 
         headers: corsHeaders 
@@ -69,10 +80,10 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Map tag type to event type (keep consistent with frontend)
+    // Map tag type to event type (aligned with frontend expectations)
     const eventTypeMapping = {
       'click-button': 'click',
-      'pin': 'view', 
+      'pin': 'pin_click', 
       'page-view': 'page_view'
     }
     

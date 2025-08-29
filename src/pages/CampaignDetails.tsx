@@ -37,7 +37,7 @@ interface EventLog {
 }
 
 const CampaignDetails = () => {
-  const { campaignId } = useParams<{ campaignId: string }>();
+  const { id: campaignId } = useParams<{ id: string }>();
   const { campaigns, loading, fetchCampaigns, deleteTag } = useCampaigns();
   const { toast } = useToast();
   const [campaign, setCampaign] = useState<CampaignWithTags | null>(null);

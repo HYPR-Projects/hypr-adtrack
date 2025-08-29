@@ -272,8 +272,8 @@ const Reports = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b bg-card">
+      {/* Fixed Liquid Glass Header */}
+      <div className="fixed top-0 left-0 right-0 z-50 backdrop-blur-lg bg-white/50 border-b border-white/20 shadow-lg">
         <div className="container mx-auto px-4 py-6">
           <div className="flex justify-between items-start">
             <div className="flex items-center gap-4">
@@ -315,7 +315,9 @@ const Reports = () => {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-6">
+      {/* Content with top padding to account for fixed header */}
+      <div className="pt-32">
+        <div className="container mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Configuration Panel */}
           <div className="lg:col-span-1 space-y-6">
@@ -520,6 +522,7 @@ const Reports = () => {
               </CardContent>
             </Card>
           </div>
+        </div>
         </div>
       </div>
     </div>

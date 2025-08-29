@@ -1,14 +1,52 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, BarChart3, MousePointer, Target, FileText } from "lucide-react";
+import { ArrowRight, BarChart3, MousePointer, Target, FileText, Eye, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Index = () => {
-  // Mock data simulando métricas atuais
-  const todayEvents = 45;
-  const totalCampaigns = 2;
-  const activeCampaigns = 1;
+  // Mock data das campanhas (mesmo do arquivo Campaigns.tsx)
+  const mockCampaigns = [
+    {
+      id: "1",
+      name: "Campanha Black Friday",
+      description: "Promoção especial para Black Friday",
+      status: "active",
+      start_date: "2024-01-15",
+      end_date: "2024-02-15",
+      created_at: "2024-01-10",
+      metrics: {
+        cta_clicks: 245,
+        pin_clicks: 189,
+        page_views: 8460,
+        total_7d: 67
+      }
+    },
+    {
+      id: "2", 
+      name: "Campanha Natal",
+      description: "Campanha para período natalino",
+      status: "paused",
+      start_date: "2024-12-01",
+      end_date: "2024-12-31",
+      created_at: "2024-11-20",
+      metrics: {
+        cta_clicks: 156,
+        pin_clicks: 98,
+        page_views: 3420,
+        total_7d: 23
+      }
+    }
+  ];
+
+  // Calcular totais agregados
+  const totalCampaigns = mockCampaigns.length;
+  const activeCampaigns = mockCampaigns.filter(c => c.status === 'active').length;
+  const totalPageViews = mockCampaigns.reduce((sum, c) => sum + c.metrics.page_views, 0);
+  const totalClickButtons = mockCampaigns.reduce((sum, c) => sum + c.metrics.cta_clicks, 0);
+  const totalMapPins = mockCampaigns.reduce((sum, c) => sum + c.metrics.pin_clicks, 0);
+  const totalClicks = totalClickButtons + totalMapPins;
+  const overallCTR = totalPageViews > 0 ? ((totalClicks / totalPageViews) * 100).toFixed(2) : "0.00";
   
   return (
     <div className="min-h-screen bg-background">
@@ -50,7 +88,7 @@ const Index = () => {
             <p className="text-sm text-muted-foreground">Acompanhe o desempenho em tempo real</p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <Card className="border shadow-sm">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
@@ -72,12 +110,12 @@ const Index = () => {
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-blue-50 rounded">
-                    <MousePointer className="w-5 h-5 text-blue-600" />
+                    <Eye className="w-5 h-5 text-blue-600" />
                   </div>
                   <div>
-                    <div className="text-xl font-semibold">{todayEvents}</div>
-                    <div className="text-sm text-neutral-600">Eventos Hoje</div>
-                    <div className="text-xs text-green-600 mt-1">+12% vs ontem</div>
+                    <div className="text-xl font-semibold">{totalPageViews.toLocaleString()}</div>
+                    <div className="text-sm text-neutral-600">Page Views</div>
+                    <div className="text-xs text-muted-foreground mt-1">Total de visualizações</div>
                   </div>
                 </div>
               </CardContent>
@@ -87,15 +125,90 @@ const Index = () => {
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-green-50 rounded">
-                    <Target className="w-5 h-5 text-green-600" />
+                    <MousePointer className="w-5 h-5 text-green-600" />
                   </div>
                   <div>
-                    <div className="text-xl font-semibold">98.2%</div>
-                    <div className="text-sm text-neutral-600">Taxa de Entrega</div>
+                    <div className="text-xl font-semibold">{totalClickButtons}</div>
+                    <div className="text-sm text-neutral-600">Click Buttons</div>
+                    <div className="text-xs text-muted-foreground mt-1">Cliques em botões</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border shadow-sm">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-purple-50 rounded">
+                    <MapPin className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <div className="text-xl font-semibold">{totalMapPins}</div>
+                    <div className="text-sm text-neutral-600">Map Pins</div>
+                    <div className="text-xs text-muted-foreground mt-1">Cliques em pins</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border shadow-sm">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-orange-50 rounded">
+                    <Target className="w-5 h-5 text-orange-600" />
+                  </div>
+                  <div>
+                    <div className="text-xl font-semibold">{overallCTR}%</div>
+                    <div className="text-sm text-neutral-600">CTR Geral</div>
                     <Badge variant="outline" className="mt-1 text-xs bg-green-50 text-green-700">
-                      Excelente
+                      {parseFloat(overallCTR) > 2 ? 'Excelente' : parseFloat(overallCTR) > 1 ? 'Bom' : 'Regular'}
                     </Badge>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Performance Summary */}
+        <div className="mb-12">
+          <div className="text-center mb-6">
+            <h2 className="text-xl font-medium text-foreground mb-2">
+              Performance Geral
+            </h2>
+            <p className="text-sm text-muted-foreground">Resumo consolidado de todas as campanhas ativas</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card className="border shadow-sm bg-gradient-to-br from-blue-50 to-blue-100">
+              <CardContent className="p-6">
+                <div className="text-center">
+                  <Eye className="w-8 h-8 text-blue-600 mx-auto mb-3" />
+                  <div className="text-3xl font-bold text-blue-700 mb-1">{totalPageViews.toLocaleString()}</div>
+                  <div className="text-sm text-blue-600 font-medium">Total de Page Views</div>
+                  <div className="text-xs text-blue-500 mt-1">Base para cálculo do CTR</div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border shadow-sm bg-gradient-to-br from-green-50 to-green-100">
+              <CardContent className="p-6">
+                <div className="text-center">
+                  <MousePointer className="w-8 h-8 text-green-600 mx-auto mb-3" />
+                  <div className="text-3xl font-bold text-green-700 mb-1">{totalClickButtons}</div>
+                  <div className="text-sm text-green-600 font-medium">Click Buttons</div>
+                  <div className="text-xs text-green-500 mt-1">Interações com botões</div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border shadow-sm bg-gradient-to-br from-purple-50 to-purple-100">
+              <CardContent className="p-6">
+                <div className="text-center">
+                  <MapPin className="w-8 h-8 text-purple-600 mx-auto mb-3" />
+                  <div className="text-3xl font-bold text-purple-700 mb-1">{totalMapPins}</div>
+                  <div className="text-sm text-purple-600 font-medium">Map Pins</div>
+                  <div className="text-xs text-purple-500 mt-1">Cliques em localizações</div>
                 </div>
               </CardContent>
             </Card>
@@ -121,7 +234,7 @@ const Index = () => {
                 </div>
                 <CardTitle className="text-base">Criação de Campanhas</CardTitle>
                 <CardDescription className="text-sm">
-                  Crie campanhas e gere automaticamente tags exclusivas para CTA e PIN com apenas alguns cliques.
+                  Crie campanhas e gere automaticamente tags exclusivas para Click Buttons e PINs com apenas alguns cliques.
                 </CardDescription>
               </CardHeader>
             </Card>

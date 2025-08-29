@@ -34,6 +34,31 @@ interface RealtimeEvent {
   metadata: any;
 }
 
+// Função utilitária para classificar eventos baseado no tipo da tag
+const classifyEventByTagType = (event: any, tagType: string) => {
+  // Se o event_type já está correto, use ele
+  if (event.event_type === 'page_view' || event.event_type === 'pin_click' || event.event_type === 'click') {
+    return event.event_type;
+  }
+  
+  // Para eventos antigos ou inconsistentes, classifique baseado no tipo da tag
+  if (event.event_type === 'view') {
+    switch (tagType) {
+      case 'page-view':
+        return 'page_view';
+      case 'pin':
+        return 'pin_click';
+      case 'click-button':
+        return 'click';
+      default:
+        return event.event_type;
+    }
+  }
+  
+  // Fallback para outros casos
+  return event.event_type;
+};
+
 const formatDate = (dateString: string) => {
   // If it's already in YYYY-MM-DD format, convert directly to pt-BR format
   if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
@@ -101,13 +126,18 @@ const CampaignDetails = () => {
         if (recentError) throw recentError;
         setIsActive(recentEvents && recentEvents.length > 0);
 
-        // Fetch metrics for last 7 days
+        // Fetch metrics for last 7 days with tag information
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
         const { data: events, error } = await supabase
           .from('events')
-          .select('event_type, created_at')
+          .select(`
+            event_type, 
+            created_at,
+            tag_id,
+            tags!inner(type)
+          `)
           .in('tag_id', tagIds)
           .gte('created_at', sevenDaysAgo.toISOString())
           .order('created_at', { ascending: false });
@@ -126,18 +156,17 @@ const CampaignDetails = () => {
             acc[date] = { cta_clicks: 0, pin_clicks: 0, page_views: 0 };
           }
 
-          switch (event.event_type) {
+          const tagType = (event as any).tags?.type;
+          const classifiedEventType = classifyEventByTagType(event, tagType);
+
+          switch (classifiedEventType) {
             case 'click':
-            case 'click_button':
-            case 'cta_click':
               acc[date].cta_clicks++;
               break;
             case 'pin_click':
-            case 'map_pin':
               acc[date].pin_clicks++;
               break;
             case 'page_view':
-            case 'view':
               acc[date].page_views++;
               break;
           }

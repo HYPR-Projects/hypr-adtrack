@@ -42,6 +42,31 @@ export interface CampaignWithTags extends Campaign {
   };
 }
 
+// Função utilitária para classificar eventos baseado no tipo da tag
+const classifyEventByTagType = (event: any, tagType: string) => {
+  // Se o event_type já está correto, use ele
+  if (event.event_type === 'page_view' || event.event_type === 'pin_click' || event.event_type === 'click') {
+    return event.event_type;
+  }
+  
+  // Para eventos antigos ou inconsistentes, classifique baseado no tipo da tag
+  if (event.event_type === 'view') {
+    switch (tagType) {
+      case 'page-view':
+        return 'page_view';
+      case 'pin':
+        return 'pin_click';
+      case 'click-button':
+        return 'click';
+      default:
+        return event.event_type;
+    }
+  }
+  
+  // Fallback para outros casos
+  return event.event_type;
+};
+
 export const useCampaigns = () => {
   const [campaigns, setCampaigns] = useState<CampaignWithTags[]>([]);
   const [loading, setLoading] = useState(true);
@@ -92,10 +117,15 @@ export const useCampaigns = () => {
           };
 
           if (tagIds.length > 0) {
-            // Get events for this campaign's tags
+            // Get events for this campaign's tags with tag information
             const { data: eventsData, error: eventsError } = await supabase
               .from('events')
-              .select('event_type, created_at')
+              .select(`
+                event_type, 
+                created_at,
+                tag_id,
+                tags!inner(type)
+              `)
               .in('tag_id', tagIds);
 
             if (!eventsError && eventsData) {
@@ -104,25 +134,25 @@ export const useCampaigns = () => {
 
               eventsData.forEach((event) => {
                 const eventDate = new Date(event.created_at);
+                const tagType = (event as any).tags?.type;
+                
+                // Classifica o evento baseado no tipo da tag se necessário
+                const classifiedEventType = classifyEventByTagType(event, tagType);
                 
                 // Count total events in last 7 days
                 if (eventDate >= sevenDaysAgo) {
                   metrics.total_7d++;
                 }
 
-                // Count by event type
-                switch (event.event_type) {
+                // Count by classified event type
+                switch (classifiedEventType) {
                   case 'click':
-                  case 'click_button':
-                  case 'cta_click':
                     metrics.cta_clicks++;
                     break;
                   case 'pin_click':
-                  case 'map_pin':
                     metrics.pin_clicks++;
                     break;
                   case 'page_view':
-                  case 'view':
                     metrics.page_views++;
                     break;
                 }

@@ -42,6 +42,7 @@ const CampaignDetails = () => {
   const { campaigns, loading, createTag, deleteTag, fetchCampaigns } = useCampaigns();
   const [dailyMetrics, setDailyMetrics] = useState<DailyMetric[]>([]);
   const [loadingMetrics, setLoadingMetrics] = useState(false);
+  const [isActive, setIsActive] = useState(false);
   
   const campaign = campaigns.find(c => c.id === id);
 
@@ -61,9 +62,25 @@ const CampaignDetails = () => {
         
         if (tagIds.length === 0) {
           setDailyMetrics([]);
+          setIsActive(false);
           return;
         }
 
+        // Check for activity in last 24 hours for status
+        const twentyFourHoursAgo = new Date();
+        twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+
+        const { data: recentEvents, error: recentError } = await supabase
+          .from('events')
+          .select('id')
+          .in('tag_id', tagIds)
+          .gte('created_at', twentyFourHoursAgo.toISOString())
+          .limit(1);
+
+        if (recentError) throw recentError;
+        setIsActive(recentEvents && recentEvents.length > 0);
+
+        // Fetch metrics for last 7 days
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
@@ -268,8 +285,8 @@ const CampaignDetails = () => {
                   <h1 className="text-2xl font-semibold text-foreground">
                     {campaign.name}
                   </h1>
-                  <Badge variant={campaign.status === 'active' ? 'default' : 'secondary'}>
-                    {campaign.status === 'active' ? 'Ativa' : 'Pausada'}
+                  <Badge variant={isActive ? 'default' : 'secondary'}>
+                    {isActive ? 'Ativo' : 'Inativo'}
                   </Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">{campaign.description}</p>

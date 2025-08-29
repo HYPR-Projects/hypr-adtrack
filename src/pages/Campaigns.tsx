@@ -285,7 +285,7 @@ const Campaigns = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Fixed Liquid Glass Header */}
-      <div className="fixed top-0 left-0 right-0 z-50 backdrop-blur-lg bg-white/70 border-b border-white/20 shadow-lg">
+      <div className="fixed top-0 left-0 right-0 z-50 backdrop-blur-lg bg-white/50 border-b border-white/20 shadow-lg">
         <div className="container mx-auto px-4 py-6">
           <div className="flex justify-between items-start">
             <div>

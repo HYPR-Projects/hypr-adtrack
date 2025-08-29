@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -149,9 +149,9 @@ const Reports = () => {
   };
 
   // Aplicar filtros quando algum valor mudar
-  useState(() => {
+  useEffect(() => {
     applyFilters();
-  });
+  }, [searchTerm, selectedCampaign, selectedEventType, dateFrom, dateTo]);
 
   const totalDisparos = filteredData.reduce((sum, item) => sum + item.count, 0);
   const totalDias = new Set(filteredData.map(item => item.date)).size;
@@ -257,7 +257,6 @@ const Reports = () => {
                     value={searchTerm}
                     onChange={(e) => {
                       setSearchTerm(e.target.value);
-                      applyFilters();
                     }}
                     className="pl-10"
                   />
@@ -268,7 +267,6 @@ const Reports = () => {
                 <Label className="text-sm">Campanha</Label>
                 <Select value={selectedCampaign} onValueChange={(value) => {
                   setSelectedCampaign(value);
-                  applyFilters();
                 }}>
                   <SelectTrigger>
                     <SelectValue placeholder="Todas as campanhas" />
@@ -288,7 +286,6 @@ const Reports = () => {
                 <Label className="text-sm">Tipo de Evento</Label>
                 <Select value={selectedEventType} onValueChange={(value) => {
                   setSelectedEventType(value);
-                  applyFilters();
                 }}>
                   <SelectTrigger>
                     <SelectValue placeholder="Todos os tipos" />
@@ -312,7 +309,6 @@ const Reports = () => {
                   value={dateFrom}
                   onChange={(e) => {
                     setDateFrom(e.target.value);
-                    applyFilters();
                   }}
                 />
               </div>
@@ -325,7 +321,6 @@ const Reports = () => {
                   value={dateTo}
                   onChange={(e) => {
                     setDateTo(e.target.value);
-                    applyFilters();
                   }}
                 />
               </div>

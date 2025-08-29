@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { UserMenu } from "@/components/UserMenu";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -374,6 +375,7 @@ const Campaigns = () => {
             </p>
           </div>
           <div className="flex gap-3">
+            <UserMenu />
             <Link to="/reports">
               <Button variant="outline" className="gap-2">
                 <FileText className="w-4 h-4" />

@@ -58,6 +58,7 @@ export const useCampaigns = () => {
     if (!user) return;
     
     try {
+      console.log('useCampaigns - fetching campaigns for user:', user?.id);
       setLoading(true);
       
       // Fetch campaigns with tags first
@@ -69,6 +70,7 @@ export const useCampaigns = () => {
         `)
         .order('created_at', { ascending: false });
 
+      console.log('useCampaigns - campaigns fetched:', campaignsData?.length, campaignsError);
       if (campaignsError) throw campaignsError;
 
       // For each campaign, fetch the profile and metrics

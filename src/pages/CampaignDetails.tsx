@@ -23,6 +23,12 @@ interface DailyMetric {
 }
 
 const formatDate = (dateString: string) => {
+  // If it's already in YYYY-MM-DD format, convert directly to pt-BR format
+  if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    const [year, month, day] = dateString.split('-');
+    return `${day}/${month}/${year}`;
+  }
+  // Fallback for other formats
   return new Date(dateString).toLocaleDateString('pt-BR');
 };
 
@@ -106,7 +112,7 @@ const CampaignDetails = () => {
             date,
             ...metrics
           }))
-          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          .sort((a, b) => b.date.localeCompare(a.date));
 
         setDailyMetrics(metricsArray);
       } catch (error) {

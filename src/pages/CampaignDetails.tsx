@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,84 +12,18 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ArrowLeft, Copy, MousePointer, Eye, Calendar, TrendingUp, Download, Tag as TagIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import AddTagDialog from "@/components/AddTagDialog";
+import { useCampaigns, type Tag } from "@/hooks/useCampaigns";
+import { supabase } from "@/integrations/supabase/client";
 
-// Types
-interface Tag {
-  id: string;
-  type: 'click-button' | 'pin' | 'page-view';
-  title: string;
-  code: string;
-  created_at: string;
-}
-
-// Mock data para métricas detalhadas por dia
-const mockDailyMetrics = [
-  { date: "2024-01-15", cta_clicks: 45, pin_clicks: 32, page_views: 1250 },
-  { date: "2024-01-14", cta_clicks: 38, pin_clicks: 29, page_views: 1180 },
-  { date: "2024-01-13", cta_clicks: 52, pin_clicks: 35, page_views: 1320 },
-  { date: "2024-01-12", cta_clicks: 41, pin_clicks: 28, page_views: 1150 },
-  { date: "2024-01-11", cta_clicks: 48, pin_clicks: 31, page_views: 1280 },
-  { date: "2024-01-10", cta_clicks: 35, pin_clicks: 25, page_views: 1080 },
-  { date: "2024-01-09", cta_clicks: 43, pin_clicks: 30, page_views: 1200 },
-];
-
-// Mock data das campanhas
-const mockCampaigns = [
-  {
-    id: "1",
-    name: "Campanha Black Friday",
-    description: "Promoção especial para Black Friday",
-    status: "active",
-    start_date: "2024-01-15",
-    end_date: "2024-02-15",
-    created_at: "2024-01-10",
-    metrics: {
-      cta_clicks: 245,
-      pin_clicks: 189,
-      page_views: 8460,
-      total_7d: 67
-    },
-    tags: [
-      {
-        id: "1",
-        type: "click-button" as const,
-        title: "Botão Principal",
-        code: "bf2024_cta_x9k2m",
-        created_at: "2024-01-10"
-      },
-      {
-        id: "2",
-        type: "pin" as const,
-        title: "Pin Localização",
-        code: "bf2024_pin_h7n4j",
-        created_at: "2024-01-10"
-      }
-    ] as Tag[]
-  },
-  {
-    id: "2", 
-    name: "Campanha Natal",
-    description: "Campanha para período natalino",
-    status: "paused",
-    start_date: "2024-12-01",
-    end_date: "2024-12-31",
-    created_at: "2024-11-20",
-    metrics: {
-      cta_clicks: 156,
-      pin_clicks: 98,
-      page_views: 3420,
-      total_7d: 23
-    },
-    tags: [
-      {
-        id: "3",
-        type: "click-button" as const,
-        title: "Banner Natalino",
-        code: "natal24_cta_k8j5l",
-        created_at: "2024-11-20"
-      }
-    ] as Tag[]
-  }
+// Dados de exemplo para métricas diárias - será substituído por dados reais
+const exampleDailyMetrics = [
+  { date: "2024-01-15", cta_clicks: 0, pin_clicks: 0, page_views: 0 },
+  { date: "2024-01-14", cta_clicks: 0, pin_clicks: 0, page_views: 0 },
+  { date: "2024-01-13", cta_clicks: 0, pin_clicks: 0, page_views: 0 },
+  { date: "2024-01-12", cta_clicks: 0, pin_clicks: 0, page_views: 0 },
+  { date: "2024-01-11", cta_clicks: 0, pin_clicks: 0, page_views: 0 },
+  { date: "2024-01-10", cta_clicks: 0, pin_clicks: 0, page_views: 0 },
+  { date: "2024-01-09", cta_clicks: 0, pin_clicks: 0, page_views: 0 },
 ];
 
 const formatDate = (dateString: string) => {
@@ -100,22 +34,32 @@ const calculateCTR = (clicks: number, pageViews: number) => {
   return pageViews > 0 ? ((clicks / pageViews) * 100).toFixed(2) : "0.00";
 };
 
-const generateTag = (campaignName: string, title: string, type: string): string => {
-  const cleanCampaign = campaignName.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 6);
-  const cleanTitle = title.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 6);
-  const random = Math.random().toString(36).slice(2, 5);
-  return `${cleanCampaign}-${cleanTitle}-${type}-${random}`;
-};
-
 const CampaignDetails = () => {
   const { id } = useParams();
   const { toast } = useToast();
-  const [dailyMetrics] = useState(mockDailyMetrics);
+  const { campaigns, loading, createTag, fetchCampaigns } = useCampaigns();
+  const [dailyMetrics] = useState(exampleDailyMetrics);
   
-  // Encontrar a campanha pelo ID e configurar estado das tags
-  const campaignData = mockCampaigns.find(c => c.id === id);
-  const [campaign, setCampaign] = useState(campaignData);
+  // Encontrar a campanha pelo ID
+  const campaign = campaigns.find(c => c.id === id);
+
+  useEffect(() => {
+    if (!loading && campaigns.length === 0) {
+      fetchCampaigns();
+    }
+  }, [loading, campaigns.length, fetchCampaigns]);
   
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Carregando campanha...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!campaign) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -142,10 +86,10 @@ const CampaignDetails = () => {
   };
 
   const getPixelUrl = (tag: string) => 
-    `https://seu-project-id.functions.supabase.co/track-event?tag=${tag}&cb=` + "${timestamp}";
+    `https://wmwpzmpgaokjplhyyktv.supabase.co/functions/v1/track-event?tag=${tag}&cb=` + "${timestamp}";
 
   const getJsSnippet = (tag: string) => 
-    `fetch("https://seu-project-id.functions.supabase.co/track-event", {
+    `fetch("https://wmwpzmpgaokjplhyyktv.supabase.co/functions/v1/track-event", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   mode: "no-cors",
@@ -155,24 +99,25 @@ const CampaignDetails = () => {
   })
 })`;
 
-  const addTag = (title: string, type: 'click-button' | 'pin' | 'page-view') => {
-    const newTag: Tag = {
-      id: Date.now().toString(),
+  const addTag = async (title: string, type: 'click-button' | 'pin' | 'page-view') => {
+    const result = await createTag({
+      campaign_id: campaign.id,
       type,
-      title,
-      code: generateTag(campaign.name, title, type),
-      created_at: new Date().toISOString()
-    };
-    
-    setCampaign(prev => ({
-      ...prev!,
-      tags: [...prev!.tags, newTag]
-    }));
-    
-    toast({
-      title: "Tag criada!",
-      description: `Tag "${title}" (${type.toUpperCase()}) foi adicionada com sucesso.`,
+      title
     });
+    
+    if (result.error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível criar a tag.",
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "Tag criada!",
+        description: `Tag "${title}" (${type.toUpperCase()}) foi adicionada com sucesso.`,
+      });
+    }
   };
 
   // Cálculos de métricas (CTR = total clicks / page views)

@@ -157,8 +157,22 @@ export const useCampaigns = () => {
 
       if (error) throw error;
 
-      // Refresh campaigns list
-      await fetchCampaigns();
+      // Add to campaigns list immediately for better UX
+      const newCampaignWithMetrics: CampaignWithTags = {
+        ...data,
+        user_id: data.user_id || '',
+        description: data.description || '',
+        status: (data.status || 'active') as 'active' | 'paused' | 'completed',
+        tags: [],
+        metrics: {
+          cta_clicks: 0,
+          pin_clicks: 0,
+          page_views: 0,
+          total_7d: 0
+        }
+      };
+      
+      setCampaigns(prev => [newCampaignWithMetrics, ...prev]);
 
       return { data, error: null };
     } catch (error) {
@@ -197,7 +211,7 @@ export const useCampaigns = () => {
 
       if (error) throw error;
 
-      // Refresh campaigns list
+      // Update campaigns list immediately for better UX
       await fetchCampaigns();
 
       return { data, error: null };

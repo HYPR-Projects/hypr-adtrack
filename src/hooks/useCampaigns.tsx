@@ -24,8 +24,16 @@ export interface Tag {
   created_at: string;
 }
 
+export interface Profile {
+  id: string;
+  email: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface CampaignWithTags extends Campaign {
   tags: Tag[];
+  profile?: Profile;
   metrics: {
     cta_clicks: number;
     pin_clicks: number;
@@ -46,12 +54,13 @@ export const useCampaigns = () => {
     try {
       setLoading(true);
       
-      // Fetch all campaigns with tags (shared workspace)
+      // Fetch all campaigns with tags and profile (shared workspace)
       const { data: campaignsData, error: campaignsError } = await supabase
         .from('campaigns')
         .select(`
           *,
-          tags (*)
+          tags (*),
+          profiles!campaigns_user_id_fkey (*)
         `)
         .order('created_at', { ascending: false });
 
@@ -111,6 +120,7 @@ export const useCampaigns = () => {
           return {
             ...campaign,
             tags: campaign.tags || [],
+            profile: campaign.profiles || null,
             metrics
           } as CampaignWithTags;
         })

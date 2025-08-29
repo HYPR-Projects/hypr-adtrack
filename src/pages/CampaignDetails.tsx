@@ -9,12 +9,11 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { ArrowLeft, Copy, MousePointer, Eye, Calendar, TrendingUp, Download, Tag as TagIcon, Trash2 } from "lucide-react";
+import { ArrowLeft, Copy, MousePointer, Eye, Calendar, TrendingUp, Download, Tag as TagIcon, Trash2, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import AddTagDialog from "@/components/AddTagDialog";
 import { useCampaigns, type Tag } from "@/hooks/useCampaigns";
 import { supabase } from "@/integrations/supabase/client";
-
 
 interface DailyMetric {
   date: string;
@@ -38,7 +37,6 @@ const CampaignDetails = () => {
   const [dailyMetrics, setDailyMetrics] = useState<DailyMetric[]>([]);
   const [loadingMetrics, setLoadingMetrics] = useState(false);
   
-  // Encontrar a campanha pelo ID
   const campaign = campaigns.find(c => c.id === id);
 
   useEffect(() => {
@@ -60,7 +58,6 @@ const CampaignDetails = () => {
           return;
         }
 
-        // Buscar eventos dos últimos 7 dias
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
@@ -73,7 +70,6 @@ const CampaignDetails = () => {
 
         if (error) throw error;
 
-        // Agrupar eventos por data
         const groupedByDate = (events || []).reduce((acc, event) => {
           const date = new Date(event.created_at).toISOString().split('T')[0];
           
@@ -100,7 +96,6 @@ const CampaignDetails = () => {
           return acc;
         }, {} as Record<string, { cta_clicks: number; pin_clicks: number; page_views: number }>);
 
-        // Converter para array e ordenar por data
         const metricsArray = Object.entries(groupedByDate)
           .map(([date, metrics]) => ({
             date,
@@ -210,7 +205,6 @@ const CampaignDetails = () => {
     }
   };
 
-  // Cálculos de métricas (CTR = total clicks / page views)
   const totalClicks = campaign.metrics.cta_clicks + campaign.metrics.pin_clicks;
   const ctaCTR = calculateCTR(campaign.metrics.cta_clicks, campaign.metrics.page_views);
   const pinCTR = calculateCTR(campaign.metrics.pin_clicks, campaign.metrics.page_views);
@@ -248,7 +242,6 @@ const CampaignDetails = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <div className="border-b bg-white">
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-start justify-between">
@@ -269,10 +262,18 @@ const CampaignDetails = () => {
                   </Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">{campaign.description}</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Criada em {formatDate(campaign.created_at)} • 
-                  Período: {formatDate(campaign.start_date)} até {formatDate(campaign.end_date)}
-                </p>
+                <div className="flex items-center gap-4 mt-2">
+                  <p className="text-xs text-muted-foreground">
+                    Criada em {formatDate(campaign.created_at)} • 
+                    Período: {formatDate(campaign.start_date)} até {formatDate(campaign.end_date)}
+                  </p>
+                  {campaign.profile && (
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <User className="w-3 h-3" />
+                      <span>Criado por: {campaign.profile.email}</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
             <Button onClick={exportToCSV} className="gap-2">
@@ -284,7 +285,6 @@ const CampaignDetails = () => {
       </div>
 
       <div className="container mx-auto px-4 py-6">
-        {/* Métricas Resumidas */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <Card className="border shadow-sm">
             <CardContent className="p-4">
@@ -347,7 +347,6 @@ const CampaignDetails = () => {
           </Card>
         </div>
 
-        {/* Tags de Tracking */}
         <Card className="border shadow-sm mb-6">
           <CardHeader>
             <div className="flex justify-between items-start">
@@ -457,7 +456,6 @@ const CampaignDetails = () => {
           </CardContent>
         </Card>
 
-        {/* Tabela de Métricas Diárias */}
         <Card className="border shadow-sm">
           <CardHeader>
             <div className="flex justify-between items-center">

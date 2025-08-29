@@ -48,6 +48,11 @@ const CampaignCard = ({ campaign }: { campaign: CampaignWithTags }) => {
                 {campaign.name}
               </CardTitle>
               <CardDescription className="text-sm">{campaign.description}</CardDescription>
+              {campaign.profile && (
+                <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                  <span>Criado por: {campaign.profile.email}</span>
+                </div>
+              )}
             </div>
             <Badge variant={campaign.status === 'active' ? 'default' : 'secondary'} className="text-xs">
               {campaign.status === 'active' ? 'Ativa' : 'Pausada'}

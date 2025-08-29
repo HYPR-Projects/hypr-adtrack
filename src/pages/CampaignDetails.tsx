@@ -71,7 +71,10 @@ const CampaignDetails = () => {
         if (error) throw error;
 
         const groupedByDate = (events || []).reduce((acc, event) => {
-          const date = new Date(event.created_at).toISOString().split('T')[0];
+          // Use local date to avoid timezone issues
+          const eventDate = new Date(event.created_at);
+          const localDate = new Date(eventDate.getTime() - eventDate.getTimezoneOffset() * 60000);
+          const date = localDate.toISOString().split('T')[0];
           
           if (!acc[date]) {
             acc[date] = { cta_clicks: 0, pin_clicks: 0, page_views: 0 };

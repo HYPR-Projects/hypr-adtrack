@@ -49,9 +49,14 @@ Deno.serve(async (req) => {
 
     // Get user agent and IP
     const userAgent = req.headers.get('user-agent')
-    const ip = req.headers.get('x-forwarded-for') || 
-               req.headers.get('x-real-ip') || 
-               'unknown'
+    
+    // Handle IP address - take only the first IP from comma-separated list
+    let rawIp = req.headers.get('x-forwarded-for') || 
+                req.headers.get('x-real-ip') || 
+                'unknown'
+    
+    // Extract first IP address from comma-separated list and trim whitespace
+    const ip = rawIp === 'unknown' ? 'unknown' : rawIp.split(',')[0].trim()
 
     // Get additional metadata based on request method
     let metadata = {}
@@ -64,25 +69,31 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Map tag type to event type
+    // Map tag type to event type (keep consistent with frontend)
     const eventTypeMapping = {
       'click-button': 'click',
-      'pin': 'view',
+      'pin': 'view', 
       'page-view': 'page_view'
     }
     
     const eventType = eventTypeMapping[tag.type as keyof typeof eventTypeMapping] || tag.type
+    
+    console.log(`Processing event: tag_type=${tag.type}, mapped_event_type=${eventType}, ip=${ip}`)
 
     // Insert event record
+    const eventData = {
+      tag_id: tag.id,
+      event_type: eventType,
+      user_agent: userAgent,
+      ip_address: ip === 'unknown' ? null : ip, // Store null instead of 'unknown' for inet type
+      metadata: metadata
+    }
+    
+    console.log('Inserting event data:', eventData)
+    
     const { error: insertError } = await supabase
       .from('events')
-      .insert({
-        tag_id: tag.id,
-        event_type: eventType,
-        user_agent: userAgent,
-        ip_address: ip,
-        metadata: metadata
-      })
+      .insert(eventData)
 
     if (insertError) {
       console.error('Error inserting event:', insertError)

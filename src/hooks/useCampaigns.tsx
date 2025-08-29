@@ -54,22 +54,35 @@ export const useCampaigns = () => {
     try {
       setLoading(true);
       
-      // Fetch all campaigns with tags and profile (shared workspace)
+      // Fetch campaigns with tags first
       const { data: campaignsData, error: campaignsError } = await supabase
         .from('campaigns')
         .select(`
           *,
-          tags (*),
-          profiles!campaigns_user_id_fkey (*)
+          tags (*)
         `)
         .order('created_at', { ascending: false });
 
       if (campaignsError) throw campaignsError;
 
-      // For each campaign, fetch metrics from events
+      // For each campaign, fetch the profile and metrics
       const campaignsWithMetrics = await Promise.all(
         (campaignsData || []).map(async (campaign) => {
           const tagIds = campaign.tags?.map((tag: Tag) => tag.id) || [];
+          
+          // Fetch profile separately if user_id exists
+          let profile: Profile | undefined = undefined;
+          if (campaign.user_id) {
+            const { data: profileData, error: profileError } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', campaign.user_id)
+              .maybeSingle();
+            
+            if (!profileError && profileData) {
+              profile = profileData;
+            }
+          }
           
           let metrics = {
             cta_clicks: 0,
@@ -120,7 +133,7 @@ export const useCampaigns = () => {
           return {
             ...campaign,
             tags: campaign.tags || [],
-            profile: campaign.profiles || null,
+            profile,
             metrics
           } as CampaignWithTags;
         })

@@ -71,10 +71,12 @@ const CampaignDetails = () => {
         if (error) throw error;
 
         const groupedByDate = (events || []).reduce((acc, event) => {
-          // Use local date to avoid timezone issues
+          // Parse the date using local timezone instead of UTC
           const eventDate = new Date(event.created_at);
-          const localDate = new Date(eventDate.getTime() - eventDate.getTimezoneOffset() * 60000);
-          const date = localDate.toISOString().split('T')[0];
+          const localDateString = eventDate.toLocaleDateString('pt-BR');
+          // Convert back to YYYY-MM-DD format for consistency
+          const [day, month, year] = localDateString.split('/');
+          const date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
           
           if (!acc[date]) {
             acc[date] = { cta_clicks: 0, pin_clicks: 0, page_views: 0 };

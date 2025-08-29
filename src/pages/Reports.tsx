@@ -1,11 +1,13 @@
 import { useState, useMemo } from "react";
 import { useCampaigns } from "@/hooks/useCampaigns";
+import { useReportEvents } from "@/hooks/useReportEvents";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -73,6 +75,14 @@ const Reports = () => {
     groupBy: 'day'
   });
 
+  // Fetch aggregated report data
+  const { data: reportEvents, loading: eventsLoading, error: eventsError } = useReportEvents({
+    selectedCampaignIds: reportConfig.selectedCampaigns,
+    dateRange: reportConfig.dateRange?.from && reportConfig.dateRange?.to ? 
+      { from: reportConfig.dateRange.from, to: reportConfig.dateRange.to } : undefined,
+    groupBy: reportConfig.groupBy
+  });
+
   // Filter campaigns based on search
   const filteredCampaigns = useMemo(() => {
     return campaigns.filter(campaign => 
@@ -89,36 +99,31 @@ const Reports = () => {
     );
   }, [campaigns, reportConfig.selectedCampaigns]);
 
-  // Generate report data
+  // Generate report data from aggregated events
   const reportData = useMemo(() => {
-    return selectedCampaignsData.map(campaign => {
-      const totalClicks = campaign.metrics.cta_clicks + campaign.metrics.pin_clicks;
-      const ctr = campaign.metrics.page_views > 0 
-        ? ((totalClicks / campaign.metrics.page_views) * 100).toFixed(2)
-        : "0.00";
-
+    return reportEvents.map(event => {
       const row: any = {};
+      
+      // Always include Period as first column
+      row['Período'] = event.period;
       
       // Add dimensions
       reportConfig.dimensions.forEach(dim => {
         switch (dim) {
           case 'campaign_name':
-            row['Nome da Campanha'] = campaign.name;
+            row['Nome da Campanha'] = event.campaignName;
             break;
           case 'campaign_status':
-            row['Status'] = campaign.status === 'active' ? 'Ativa' : 'Pausada';
+            row['Status'] = event.campaignStatus === 'active' ? 'Ativa' : 'Pausada';
             break;
           case 'campaign_description':
-            row['Descrição'] = campaign.description || '';
+            row['Descrição'] = event.campaignDescription;
             break;
           case 'start_date':
-            row['Data de Início'] = format(new Date(campaign.start_date), 'dd/MM/yyyy');
+            row['Data de Início'] = format(new Date(event.campaignStartDate), 'dd/MM/yyyy');
             break;
           case 'end_date':
-            row['Data de Fim'] = format(new Date(campaign.end_date), 'dd/MM/yyyy');
-            break;
-          case 'created_at':
-            row['Data de Criação'] = format(new Date(campaign.created_at), 'dd/MM/yyyy');
+            row['Data de Fim'] = format(new Date(event.campaignEndDate), 'dd/MM/yyyy');
             break;
         }
       });
@@ -127,26 +132,26 @@ const Reports = () => {
       reportConfig.metrics.forEach(metric => {
         switch (metric) {
           case 'page_views':
-            row['Page Views'] = campaign.metrics.page_views;
+            row['Page Views'] = event.pageViews;
             break;
           case 'cta_clicks':
-            row['Click Buttons'] = campaign.metrics.cta_clicks;
+            row['Click Buttons'] = event.ctaClicks;
             break;
           case 'pin_clicks':
-            row['Map Pins'] = campaign.metrics.pin_clicks;
+            row['Map Pins'] = event.pinClicks;
             break;
           case 'ctr':
-            row['CTR (%)'] = ctr;
+            row['CTR (%)'] = event.ctr;
             break;
           case 'total_clicks':
-            row['Total Clicks'] = totalClicks;
+            row['Total Clicks'] = event.totalClicks;
             break;
         }
       });
 
       return row;
     });
-  }, [selectedCampaignsData, reportConfig]);
+  }, [reportEvents, reportConfig]);
 
   const handleCampaignToggle = (campaignId: string, checked: boolean) => {
     setReportConfig(prev => ({
@@ -485,14 +490,37 @@ const Reports = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                {reportData.length === 0 ? (
+                {eventsLoading ? (
+                  <div className="space-y-3">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-full" />
+                  </div>
+                ) : eventsError ? (
+                  <div className="text-center py-12">
+                    <FileText className="w-12 h-12 text-destructive mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-destructive mb-2">
+                      Erro ao carregar dados
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      {eventsError}
+                    </p>
+                  </div>
+                ) : reportData.length === 0 ? (
                   <div className="text-center py-12">
                     <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-muted-foreground mb-2">
-                      Nenhuma campanha selecionada
+                      {reportConfig.selectedCampaigns.length === 0 
+                        ? "Nenhuma campanha selecionada" 
+                        : "Nenhum evento encontrado"
+                      }
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      Selecione pelo menos uma campanha para visualizar o relatório
+                      {reportConfig.selectedCampaigns.length === 0 
+                        ? "Selecione pelo menos uma campanha para visualizar o relatório"
+                        : "Não há eventos para as campanhas e período selecionados"
+                      }
                     </p>
                   </div>
                 ) : (

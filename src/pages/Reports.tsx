@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -119,7 +119,7 @@ const Reports = () => {
   const eventTypes = [...new Set(reportData.map(item => item.event_type))];
 
   // Aplicar filtros
-  const applyFilters = () => {
+  const applyFilters = useCallback(() => {
     let filtered = [...reportData];
 
     if (searchTerm) {
@@ -146,12 +146,12 @@ const Reports = () => {
     }
 
     setFilteredData(filtered);
-  };
+  }, [reportData, searchTerm, selectedCampaign, selectedEventType, dateFrom, dateTo]);
 
   // Aplicar filtros quando algum valor mudar
   useEffect(() => {
     applyFilters();
-  }, [searchTerm, selectedCampaign, selectedEventType, dateFrom, dateTo]);
+  }, [applyFilters]);
 
   const totalDisparos = filteredData.reduce((sum, item) => sum + item.count, 0);
   const totalDias = new Set(filteredData.map(item => item.date)).size;

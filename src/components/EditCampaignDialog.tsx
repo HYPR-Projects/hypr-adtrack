@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useToast } from "@/hooks/use-toast";
 import { useCampaigns, type CampaignWithTags } from "@/hooks/useCampaigns";
 import { useInsertionOrders } from "@/hooks/useInsertionOrders";
+import { useCampaignGroups } from "@/hooks/useCampaignGroups";
 import { supabase } from "@/integrations/supabase/client";
 
 interface EditCampaignDialogProps {
@@ -20,8 +21,10 @@ export const EditCampaignDialog = ({ campaign, open, onOpenChange }: EditCampaig
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [insertionOrderId, setInsertionOrderId] = useState("");
+  const [campaignGroupId, setCampaignGroupId] = useState("");
   const [loading, setLoading] = useState(false);
   const { insertionOrders } = useInsertionOrders();
+  const { campaignGroups } = useCampaignGroups();
   const { toast } = useToast();
 
   // Reset form when dialog opens with new data
@@ -30,6 +33,7 @@ export const EditCampaignDialog = ({ campaign, open, onOpenChange }: EditCampaig
       setName(campaign.name);
       setDescription(campaign.description || "");
       setInsertionOrderId(campaign.insertion_order_id || "none");
+      setCampaignGroupId(campaign.campaign_group_id || "none");
     }
   }, [campaign, open]);
 
@@ -64,6 +68,7 @@ export const EditCampaignDialog = ({ campaign, open, onOpenChange }: EditCampaig
       name: name.trim(),
       description: description.trim() || null,
       insertion_order_id: insertionOrderId === "none" ? null : insertionOrderId,
+      campaign_group_id: campaignGroupId === "none" ? null : campaignGroupId,
       updated_at: new Date().toISOString()
     };
 
@@ -72,12 +77,12 @@ export const EditCampaignDialog = ({ campaign, open, onOpenChange }: EditCampaig
     if (error) {
       toast({
         title: "Erro",
-        description: "Não foi possível atualizar a campanha.",
+        description: "Não foi possível atualizar o criativo.",
         variant: "destructive"
       });
     } else {
       toast({
-        title: "Campanha atualizada!",
+        title: "Criativo atualizado!",
         description: "As informações foram salvas com sucesso.",
       });
       onOpenChange(false);
@@ -96,14 +101,14 @@ export const EditCampaignDialog = ({ campaign, open, onOpenChange }: EditCampaig
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Editar Campanha</DialogTitle>
+          <DialogTitle>Editar Criativo</DialogTitle>
           <DialogDescription>
-            Atualize as informações da campanha, incluindo a insertion order associada.
+            Atualize as informações do criativo, incluindo a insertion order e campanha associadas.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Nome da Campanha *</Label>
+            <Label htmlFor="name">Nome do Criativo *</Label>
             <Input
               id="name"
               placeholder="Ex: Black Friday 2024"
@@ -118,7 +123,7 @@ export const EditCampaignDialog = ({ campaign, open, onOpenChange }: EditCampaig
             <Label htmlFor="description">Descrição</Label>
             <Textarea
               id="description"
-              placeholder="Descrição opcional da campanha"
+              placeholder="Descrição opcional do criativo"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
@@ -145,7 +150,28 @@ export const EditCampaignDialog = ({ campaign, open, onOpenChange }: EditCampaig
               A insertion order organiza suas campanhas por cliente/projeto
             </p>
           </div>
-          
+
+          <div className="space-y-2">
+            <Label htmlFor="campaignGroup">Campanha</Label>
+            <Select value={campaignGroupId} onValueChange={setCampaignGroupId} disabled={loading}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione uma campanha (opcional)" />
+              </SelectTrigger>
+              <SelectContent className="bg-background border shadow-md">
+                <SelectItem value="none">Nenhuma campanha</SelectItem>
+                {campaignGroups
+                  .filter(cg => !insertionOrderId || insertionOrderId === "none" || cg.insertion_order_id === insertionOrderId)
+                  .map((cg) => (
+                    <SelectItem key={cg.id} value={cg.id}>
+                      {cg.name}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              A campanha agrupa criativos relacionados dentro de uma insertion order
+            </p>
+          </div>
           
           <div className="flex gap-3 pt-4">
             <Button type="button" variant="outline" onClick={handleClose} className="flex-1" disabled={loading}>

@@ -110,7 +110,7 @@ const Auth = () => {
           )}
 
           <Tabs defaultValue="signin" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-2 bg-white/10 border border-white/20 backdrop-blur-sm">
+            <TabsList className="grid w-full grid-cols-2 bg-transparent border border-white/20 backdrop-blur-sm">
               <TabsTrigger value="signin" className="flex items-center gap-2 text-white data-[state=active]:bg-white/20 data-[state=active]:text-white">
                 <LogIn className="w-4 h-4" />
                 Entrar
@@ -122,7 +122,7 @@ const Auth = () => {
             </TabsList>
 
             <TabsContent value="signin">
-              <Card className="bg-white/10 border border-white/20 backdrop-blur-sm">
+              <Card className="bg-transparent border border-white/20 backdrop-blur-sm">
                 <CardHeader>
                   <CardTitle className="text-white">Fazer Login</CardTitle>
                   <CardDescription className="text-white/80">
@@ -139,7 +139,7 @@ const Auth = () => {
                         placeholder="seu-email@hypr.mobi"
                         required
                         disabled={loading}
-                        className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
+                        className="bg-transparent border-white/20 text-white placeholder:text-white/60"
                       />
                     </div>
                     <div className="space-y-2">
@@ -151,10 +151,10 @@ const Auth = () => {
                         placeholder="Digite sua senha"
                         required
                         disabled={loading}
-                        className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
+                        className="bg-transparent border-white/20 text-white placeholder:text-white/60"
                       />
                     </div>
-                    <Button type="submit" className="w-full bg-white/20 hover:bg-white/30 text-white border border-white/30" disabled={loading}>
+                    <Button type="submit" className="w-full bg-transparent hover:bg-white/20 text-white border border-white/30" disabled={loading}>
                       {loading ? 'Entrando...' : 'Entrar'}
                     </Button>
                   </form>
@@ -163,7 +163,7 @@ const Auth = () => {
             </TabsContent>
 
             <TabsContent value="signup">
-              <Card className="bg-white/10 border border-white/20 backdrop-blur-sm">
+              <Card className="bg-transparent border border-white/20 backdrop-blur-sm">
                 <CardHeader>
                   <CardTitle className="text-white">Criar Conta</CardTitle>
                   <CardDescription className="text-white/80">
@@ -181,7 +181,7 @@ const Auth = () => {
                         placeholder="seu-email@hypr.mobi"
                         required
                         disabled={loading}
-                        className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
+                        className="bg-transparent border-white/20 text-white placeholder:text-white/60"
                       />
                     </div>
                     <div className="space-y-2">
@@ -194,7 +194,7 @@ const Auth = () => {
                         required
                         disabled={loading}
                         minLength={6}
-                        className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
+                        className="bg-transparent border-white/20 text-white placeholder:text-white/60"
                       />
                     </div>
                     <div className="space-y-2">
@@ -207,10 +207,10 @@ const Auth = () => {
                         required
                         disabled={loading}
                         minLength={6}
-                        className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
+                        className="bg-transparent border-white/20 text-white placeholder:text-white/60"
                       />
                     </div>
-                    <Button type="submit" className="w-full bg-white/20 hover:bg-white/30 text-white border border-white/30" disabled={loading}>
+                    <Button type="submit" className="w-full bg-transparent hover:bg-white/20 text-white border border-white/30" disabled={loading}>
                       {loading ? 'Criando conta...' : 'Criar Conta'}
                     </Button>
                   </form>

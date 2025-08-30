@@ -4,6 +4,7 @@ import { CampaignCard } from "@/components/CampaignCard";
 import { MetricsCard } from "@/components/MetricsCard";
 import { Breadcrumb, useBreadcrumbs } from "@/components/Breadcrumb";
 import { useCampaigns, type CampaignWithTags } from "@/hooks/useCampaigns";
+import { useCampaignGroups } from "@/hooks/useCampaignGroups";
 import { useInsertionOrders } from "@/hooks/useInsertionOrders";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -164,6 +165,7 @@ const CreateCriativoDialog = ({
 const Criativos = () => {
   const { campaigns, loading, createCampaign } = useCampaigns();
   const { insertionOrders } = useInsertionOrders();
+  const { campaignGroups } = useCampaignGroups();
   const { insertionOrderId, campaignGroupId } = useParams();
   const { generateBreadcrumbs } = useBreadcrumbs();
   const navigate = useNavigate();
@@ -176,10 +178,9 @@ const Criativos = () => {
   
   // Get current campaign group if we're in that context
   const currentCampaignGroup = useMemo(() => {
-    // We'll need to fetch campaign group info when we have the ID
-    // For now, return null as we don't have the campaign groups hook here
-    return null;
-  }, [campaignGroupId]);
+    if (!campaignGroupId) return null;
+    return campaignGroups.find(cg => cg.id === campaignGroupId);
+  }, [campaignGroupId, campaignGroups]);
 
   // Filter campaigns by campaign group if specified in URL
   const relevantCampaigns = useMemo(() => {
@@ -369,13 +370,46 @@ const Criativos = () => {
           {/* Header with Campaign Group context */}
           {currentCampaignGroup && (
             <div className="mb-6 p-4 bg-muted/30 rounded-lg border">
-              <div className="flex items-center gap-2 mb-1">
-                <Users className="w-4 h-4 text-muted-foreground" />
-                <h2 className="text-lg font-semibold">{currentCampaignGroup.name}</h2>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Users className="w-4 h-4 text-muted-foreground" />
+                    <h2 className="text-lg font-semibold">{currentCampaignGroup.name}</h2>
+                  </div>
+                  {currentCampaignGroup.description && (
+                    <p className="text-sm text-muted-foreground">{currentCampaignGroup.description}</p>
+                  )}
+                </div>
+                
+                {/* Campaign Group Selector */}
+                <div className="flex items-center gap-3">
+                  <Label className="text-sm font-medium">Trocar campanha:</Label>
+                  <Select 
+                    value={campaignGroupId || ""} 
+                    onValueChange={(value) => {
+                      if (value === "all") {
+                        navigate("/criativos");
+                      } else {
+                        navigate(`/campanhas/${value}/criativos`);
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="w-[250px]">
+                      <SelectValue placeholder="Selecione uma campanha" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border shadow-md">
+                      <SelectItem value="all">Todas as campanhas</SelectItem>
+                      {campaignGroups
+                        .filter(cg => !insertionOrderId || cg.insertion_order_id === insertionOrderId)
+                        .map((cg) => (
+                          <SelectItem key={cg.id} value={cg.id}>
+                            {cg.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              {currentCampaignGroup.description && (
-                <p className="text-sm text-muted-foreground">{currentCampaignGroup.description}</p>
-              )}
             </div>
           )}
 

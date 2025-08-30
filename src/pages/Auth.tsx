@@ -76,7 +76,7 @@ const Auth = () => {
         <img 
           src="/lovable-uploads/0fcddc38-83cc-4638-b362-1485d244ceb3.png" 
           alt="HYPR TRACKING" 
-          className="h-16 object-contain"
+          className="h-8 object-contain"
         />
       </div>
 

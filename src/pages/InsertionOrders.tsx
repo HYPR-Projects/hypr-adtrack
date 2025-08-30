@@ -51,7 +51,7 @@ const CreateInsertionOrderDialog = ({ onCreated }: { onCreated: () => void }) =>
     } else {
       toast({
         title: "Insertion Order criada!",
-        description: "Agora você pode criar campanhas dentro desta insertion order.",
+        description: "Agora você pode criar criativos dentro desta insertion order.",
       });
       
       // Reset form
@@ -78,7 +78,7 @@ const CreateInsertionOrderDialog = ({ onCreated }: { onCreated: () => void }) =>
         <DialogHeader>
           <DialogTitle>Criar Nova Insertion Order</DialogTitle>
           <DialogDescription>
-            Crie uma nova insertion order para organizar suas campanhas por cliente/projeto.
+            Crie uma nova insertion order para organizar seus criativos por cliente/projeto.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -235,7 +235,7 @@ const InsertionOrders = () => {
                 />
               </div>
               <p className="text-sm text-muted-foreground">
-                Gerencie suas insertion orders e organize campanhas por cliente
+                Gerencie suas insertion orders e organize criativos por cliente
               </p>
             </div>
             <div className="flex gap-3">
@@ -290,8 +290,8 @@ const InsertionOrders = () => {
                 
                 <MetricsCard
                   icon={FolderOpen}
-                  value={totalCampaigns}
-                  label="Total de Campanhas"
+                   value={totalCampaigns}
+                   label="Total de Criativos"
                   className="bg-blue-50"
                   iconColor="text-blue-600"
                 />
@@ -437,7 +437,7 @@ const InsertionOrders = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir Insertion Order</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir esta insertion order? Esta ação também excluirá todas as campanhas associadas e não pode ser desfeita.
+              Tem certeza que deseja excluir esta insertion order? Esta ação também excluirá todos os criativos associados e não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

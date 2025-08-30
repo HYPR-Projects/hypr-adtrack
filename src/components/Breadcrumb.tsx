@@ -73,25 +73,25 @@ export const useBreadcrumbs = () => {
       icon: Building
     });
 
-    // Sempre adicionar Campanhas como segunda opção
+    // Sempre adicionar Criativos como segunda opção
     items.push({
-      label: 'Campanhas',
-      href: '/campaigns',
+      label: 'Criativos',
+      href: '/criativos',
       icon: FolderOpen
     });
 
-    // Se estivermos em detalhes de campanha específica
-    if (pathname.includes('/campaigns/') && campaignName && !pathname.endsWith('/new')) {
+    // Se estivermos em detalhes de criativo específico
+    if (pathname.includes('/criativos/') && campaignName && !pathname.endsWith('/new')) {
       items.push({
         label: campaignName,
         icon: FileText
       });
     }
 
-    // Se estivermos criando nova campanha
+    // Se estivermos criando novo criativo
     if (pathname.endsWith('/new')) {
       items.push({
-        label: 'Nova Campanha',
+        label: 'Novo Criativo',
         icon: FileText
       });
     }

@@ -25,12 +25,12 @@ import type { DateRange } from "react-day-picker";
 
 // Componentes otimizados agora estão em arquivos separados
 
-const CreateCampaignDialog = ({ 
-  onCampaignCreated, 
+const CreateCriativoDialog = ({ 
+  onCriativoCreated,
   insertionOrderId,
   createCampaign
 }: { 
-  onCampaignCreated: () => void;
+  onCriativoCreated: () => void;
   insertionOrderId?: string;
   createCampaign: (data: any) => Promise<any>;
 }) => {
@@ -55,20 +55,20 @@ const CreateCampaignDialog = ({
     if (error) {
       toast({
         title: "Erro",
-        description: "Não foi possível criar a campanha.",
+        description: "Não foi possível criar o criativo.",
         variant: "destructive"
       });
     } else {
       toast({
-        title: "Campanha criada!",
-        description: "Acesse os detalhes da campanha para adicionar tags de tracking.",
+        title: "Criativo criado!",
+        description: "Acesse os detalhes do criativo para adicionar tags de tracking.",
       });
       
       // Reset form
       setName("");
       setDescription("");
       setOpen(false);
-      onCampaignCreated();
+      onCriativoCreated();
     }
 
     setLoading(false);
@@ -79,22 +79,22 @@ const CreateCampaignDialog = ({
       <DialogTrigger asChild>
         <Button className="gap-2">
           <Plus className="w-4 h-4" />
-          Nova Campanha
+          Novo Criativo
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Criar Nova Campanha</DialogTitle>
+          <DialogTitle>Criar Novo Criativo</DialogTitle>
           <DialogDescription>
-            Crie uma nova campanha. Você poderá adicionar tags de tracking após a criação.
+            Crie um novo criativo. Você poderá adicionar tags de tracking após a criação.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Nome da Campanha *</Label>
+            <Label htmlFor="name">Nome do Criativo *</Label>
             <Input
               id="name"
-              placeholder="Ex: Black Friday 2024"
+              placeholder="Ex: Banner Black Friday 2024"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
@@ -105,7 +105,7 @@ const CreateCampaignDialog = ({
             <Label htmlFor="description">Descrição</Label>
             <Textarea
               id="description"
-              placeholder="Descrição opcional da campanha"
+              placeholder="Descrição opcional do criativo"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
@@ -117,7 +117,7 @@ const CreateCampaignDialog = ({
               Cancelar
             </Button>
             <Button type="submit" className="flex-1" disabled={loading}>
-              {loading ? 'Criando...' : 'Criar Campanha'}
+              {loading ? 'Criando...' : 'Criar Criativo'}
             </Button>
           </div>
         </form>
@@ -126,7 +126,7 @@ const CreateCampaignDialog = ({
   );
 };
 
-const Campaigns = () => {
+const Criativos = () => {
   const { campaigns, loading, createCampaign } = useCampaigns();
   const { insertionOrders } = useInsertionOrders();
   const { insertionOrderId } = useParams();
@@ -238,7 +238,7 @@ const Campaigns = () => {
     setInsertionOrderFilter("all");
   };
 
-  const handleCampaignCreated = useCallback(() => {
+  const handleCriativoCreated = useCallback(() => {
     // Campaigns will be refreshed automatically by the hook
   }, []);
 
@@ -298,7 +298,7 @@ const Campaigns = () => {
                 />
               </div>
               <p className="text-sm text-muted-foreground">
-                Gerencie suas campanhas e acompanhe métricas de tracking
+                Gerencie seus criativos e acompanhe métricas de tracking
               </p>
             </div>
             <div className="flex gap-3">
@@ -322,8 +322,8 @@ const Campaigns = () => {
           
           {/* Actions Bar */}
           <div className="flex justify-end gap-3 mb-6">
-            <CreateCampaignDialog 
-              onCampaignCreated={handleCampaignCreated} 
+            <CreateCriativoDialog 
+              onCriativoCreated={handleCriativoCreated} 
               insertionOrderId={insertionOrderId}
               createCampaign={createCampaign}
             />
@@ -346,7 +346,7 @@ const Campaigns = () => {
                       setStatusFilter("all");
                       setInsertionOrderFilter("all");
                       
-                      navigate(`/insertion-orders/${value}/campaigns`);
+                      navigate(`/insertion-orders/${value}/criativos`);
                     }
                   }}
                 >
@@ -383,13 +383,13 @@ const Campaigns = () => {
                 <MetricsCard
                   icon={BarChart3}
                   value={totalCampaigns}
-                  label="Total de Campanhas"
+                  label="Total de Criativos"
                 />
                 
                 <MetricsCard
                   icon={BarChart3}
                   value={activeCampaigns}
-                  label="Campanhas Ativas"
+                  label="Criativos Ativos"
                   className="bg-green-50"
                   iconColor="text-green-600"
                 />
@@ -413,7 +413,7 @@ const Campaigns = () => {
                 <div className="relative flex-1 max-w-sm">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
-                    placeholder="Buscar campanhas..."
+                    placeholder="Buscar criativos..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10"
@@ -513,9 +513,9 @@ const Campaigns = () => {
           {/* Campaigns List */}
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <h2 className="text-lg font-medium">Suas Campanhas {currentInsertionOrder ? `- ${currentInsertionOrder.client_name}` : ''}</h2>
+              <h2 className="text-lg font-medium">Seus Criativos {currentInsertionOrder ? `- ${currentInsertionOrder.client_name}` : ''}</h2>
               <Badge variant="outline" className="text-xs">
-                {filteredCampaigns.length} campanha{filteredCampaigns.length !== 1 ? 's' : ''}
+                {filteredCampaigns.length} criativo{filteredCampaigns.length !== 1 ? 's' : ''}
                 {filteredCampaigns.length !== relevantCampaigns.length && (
                   <span className="text-muted-foreground ml-1">de {relevantCampaigns.length}</span>
                 )}
@@ -539,7 +539,7 @@ const Campaigns = () => {
                     {searchTerm || dateRange?.from || dateRange?.to || creatorFilter !== "all" || creationMonthFilter !== "all" || statusFilter !== "all" ? (
                       <>
                         <Filter className="w-12 h-12 mx-auto mb-2 opacity-40" />
-                        <p>Nenhuma campanha encontrada com os filtros aplicados</p>
+                        <p>Nenhum criativo encontrado com os filtros aplicados</p>
                         <Button 
                           variant="link" 
                           onClick={clearFilters}
@@ -551,9 +551,9 @@ const Campaigns = () => {
                     ) : (
                       <>
                         <BarChart3 className="w-12 h-12 mx-auto mb-2 opacity-40" />
-                        <p className="mb-4">Nenhuma campanha criada ainda</p>
-                        <CreateCampaignDialog 
-                          onCampaignCreated={handleCampaignCreated} 
+                        <p className="mb-4">Nenhum criativo criado ainda</p>
+                        <CreateCriativoDialog 
+                          onCriativoCreated={handleCriativoCreated} 
                           insertionOrderId={insertionOrderId}
                           createCampaign={createCampaign}
                         />
@@ -576,4 +576,4 @@ const Campaigns = () => {
   );
 };
 
-export default Campaigns;
+export default Criativos;

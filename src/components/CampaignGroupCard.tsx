@@ -4,7 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { BarChart3, MousePointer, Eye, Users, Calendar } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { EditCampaignGroupDialog } from '@/components/EditCampaignGroupDialog';
+import { BarChart3, MousePointer, Eye, Users, Calendar, MoreVertical, Settings } from 'lucide-react';
 import type { CampaignGroup } from '@/hooks/useCampaignGroups';
 
 interface CampaignGroupCardProps {
@@ -46,9 +48,31 @@ export const CampaignGroupCard = memo(({ campaignGroup }: CampaignGroupCardProps
               </div>
             </div>
           </div>
-          <Badge variant={campaignGroup.status === 'active' ? 'default' : 'secondary'} className="text-xs">
-            {campaignGroup.status === 'active' ? 'Ativa' : 'Pausada'}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant={campaignGroup.status === 'active' ? 'default' : 'secondary'} className="text-xs">
+              {campaignGroup.status === 'active' ? 'Ativa' : 'Pausada'}
+            </Badge>
+            
+            {/* Menu de ações */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <EditCampaignGroupDialog campaignGroup={campaignGroup}>
+                  <DropdownMenuItem 
+                    onSelect={(e) => e.preventDefault()} // Previne fechar o dropdown automaticamente
+                    className="gap-2"
+                  >
+                    <Settings className="w-4 h-4" />
+                    Editar Campanha
+                  </DropdownMenuItem>
+                </EditCampaignGroupDialog>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </CardHeader>
       

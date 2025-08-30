@@ -25,6 +25,7 @@ const App = () => (
           <Route path="/" element={<ProtectedRoute><InsertionOrders /></ProtectedRoute>} />
           <Route path="/insertion-orders" element={<ProtectedRoute><InsertionOrders /></ProtectedRoute>} />
           <Route path="/insertion-orders/:insertionOrderId/campanhas" element={<ProtectedRoute><Campanhas /></ProtectedRoute>} />
+          <Route path="/campanhas" element={<ProtectedRoute><Campanhas /></ProtectedRoute>} />
           <Route path="/campanhas/:campaignGroupId/criativos" element={<ProtectedRoute><Criativos /></ProtectedRoute>} />
           <Route path="/insertion-orders/:insertionOrderId/criativos/new" element={<ProtectedRoute><CriativoDetails /></ProtectedRoute>} />
           <Route path="/criativos" element={<ProtectedRoute><Criativos /></ProtectedRoute>} />

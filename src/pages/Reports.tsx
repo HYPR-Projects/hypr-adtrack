@@ -37,6 +37,7 @@ const availableDimensions = [
   { id: 'insertion_order_name', label: 'Nome da Insertion Order' },
   { id: 'campaign_description', label: 'Descrição' },
   { id: 'campaign_tags', label: 'Tags' },
+  { id: 'creative_format', label: 'Formato do Criativo' },
 ];
 
 interface Campaign {
@@ -121,6 +122,9 @@ const Reports = () => {
             break;
           case 'campaign_tags':
             row['Tags'] = event.campaignTags;
+            break;
+          case 'creative_format':
+            row['Formato do Criativo'] = event.creativeFormat;
             break;
         }
       });

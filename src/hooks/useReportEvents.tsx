@@ -11,6 +11,7 @@ export interface ReportEvent {
   campaignDescription: string;
   campaignTags: string;
   insertionOrderName: string;
+  creativeFormat: string;
   tagId?: string;
   tagTitle?: string;
   pageViews: number;
@@ -87,6 +88,7 @@ export const useReportEvents = ({ selectedCampaignIds, dateRange, groupBy, selec
           start_date,
           end_date,
           insertion_order_id,
+          creative_format,
           insertion_orders (
             client_name
           ),
@@ -186,6 +188,7 @@ export const useReportEvents = ({ selectedCampaignIds, dateRange, groupBy, selec
               campaignDescription: campaign.description || '',
               campaignTags: shouldBreakByTags && eventTag ? eventTag.title : campaign.tags?.map((tag: any) => tag.title).join(', ') || '',
               insertionOrderName: (campaign as any).insertion_orders?.client_name || 'Sem Insertion Order',
+              creativeFormat: campaign.creative_format || 'Não definido',
               tagId: shouldBreakByTags && eventTag ? eventTag.id : undefined,
               tagTitle: shouldBreakByTags && eventTag ? eventTag.title : undefined,
               pageViews: 0,

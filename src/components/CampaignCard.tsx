@@ -44,6 +44,9 @@ export const CampaignCard = memo(({ campaign }: CampaignCardProps) => {
                   <span>Criado por: {campaign.profile.email}</span>
                 </div>
               )}
+              <div className="text-xs text-muted-foreground mt-1">
+                Criado em: {new Date(campaign.created_at).toLocaleDateString('pt-BR')}
+              </div>
             </div>
             <Badge variant={campaign.status === 'active' ? 'default' : 'secondary'} className="text-xs">
               {campaign.status === 'active' ? 'Ativa' : 'Pausada'}

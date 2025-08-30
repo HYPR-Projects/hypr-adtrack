@@ -12,8 +12,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, BarChart3, MousePointer, FileText, Search, CalendarIcon, Filter } from "lucide-react";
+import { Plus, BarChart3, MousePointer, FileText, Search, CalendarIcon, Filter, User, Activity } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
@@ -119,14 +120,36 @@ const Campaigns = () => {
   const { campaigns, loading } = useCampaigns();
   const [searchTerm, setSearchTerm] = useState("");
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [creatorFilter, setCreatorFilter] = useState<string>("all");
+  const [creationMonthFilter, setCreationMonthFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   
-  // Filtered campaigns based on search and date range
+  // Get unique creators and months for filter options
+  const uniqueCreators = useMemo(() => {
+    const creators = campaigns
+      .filter(c => c.profile?.email)
+      .map(c => c.profile!.email)
+      .filter((email, index, arr) => arr.indexOf(email) === index);
+    return creators.sort();
+  }, [campaigns]);
+
+  const uniqueMonths = useMemo(() => {
+    const months = campaigns
+      .map(c => {
+        const date = new Date(c.created_at);
+        return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+      })
+      .filter((month, index, arr) => arr.indexOf(month) === index);
+    return months.sort().reverse();
+  }, [campaigns]);
+
+  // Filtered campaigns based on all filters
   const filteredCampaigns = useMemo(() => {
     return campaigns.filter(campaign => {
       // Search filter
       const matchesSearch = 
         campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        campaign.description.toLowerCase().includes(searchTerm.toLowerCase());
+        (campaign.description && campaign.description.toLowerCase().includes(searchTerm.toLowerCase()));
       
       // Date range filter
       const campaignDate = new Date(campaign.created_at);
@@ -134,9 +157,25 @@ const Campaigns = () => {
         (!dateRange?.from || campaignDate >= dateRange.from) &&
         (!dateRange?.to || campaignDate <= dateRange.to);
       
-      return matchesSearch && matchesDateRange;
+      // Creator filter
+      const matchesCreator = 
+        creatorFilter === "all" || 
+        campaign.profile?.email === creatorFilter;
+      
+      // Creation month filter
+      const campaignMonth = `${campaignDate.getFullYear()}-${(campaignDate.getMonth() + 1).toString().padStart(2, '0')}`;
+      const matchesCreationMonth = 
+        creationMonthFilter === "all" || 
+        campaignMonth === creationMonthFilter;
+      
+      // Status filter
+      const matchesStatus = 
+        statusFilter === "all" || 
+        campaign.status === statusFilter;
+      
+      return matchesSearch && matchesDateRange && matchesCreator && matchesCreationMonth && matchesStatus;
     });
-  }, [campaigns, searchTerm, dateRange]);
+  }, [campaigns, searchTerm, dateRange, creatorFilter, creationMonthFilter, statusFilter]);
   
   const totalCampaigns = filteredCampaigns.length;
   const activeCampaigns = filteredCampaigns.filter(c => c.status === 'active').length;
@@ -145,6 +184,9 @@ const Campaigns = () => {
   const clearFilters = () => {
     setSearchTerm("");
     setDateRange(undefined);
+    setCreatorFilter("all");
+    setCreationMonthFilter("all");
+    setStatusFilter("all");
   };
 
   const handleCampaignCreated = useCallback(() => {
@@ -263,8 +305,9 @@ const Campaigns = () => {
 
           {/* Filters Section */}
           <div className="p-4 bg-muted/50 rounded-lg border mb-6">
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-              <div className="flex flex-col sm:flex-row gap-3 flex-1">
+            <div className="space-y-4">
+              {/* First row: Search and Date Range */}
+              <div className="flex flex-col sm:flex-row gap-3">
                 <div className="relative flex-1 max-w-sm">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
@@ -277,7 +320,60 @@ const Campaigns = () => {
                 <DateRangePicker />
               </div>
               
-              {(searchTerm || dateRange?.from || dateRange?.to) && (
+              {/* Second row: New filters */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Select value={creatorFilter} onValueChange={setCreatorFilter}>
+                  <SelectTrigger className="w-full sm:w-[200px]">
+                    <User className="w-4 h-4 mr-2" />
+                    <SelectValue placeholder="Responsável" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os criadores</SelectItem>
+                    {uniqueCreators.map((creator) => (
+                      <SelectItem key={creator} value={creator}>
+                        {creator}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={creationMonthFilter} onValueChange={setCreationMonthFilter}>
+                  <SelectTrigger className="w-full sm:w-[180px]">
+                    <CalendarIcon className="w-4 h-4 mr-2" />
+                    <SelectValue placeholder="Mês/Ano" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os períodos</SelectItem>
+                    {uniqueMonths.map((month) => {
+                      const [year, monthNum] = month.split('-');
+                      const monthName = new Date(parseInt(year), parseInt(monthNum) - 1).toLocaleDateString('pt-BR', { 
+                        month: 'long', 
+                        year: 'numeric' 
+                      });
+                      return (
+                        <SelectItem key={month} value={month}>
+                          {monthName.charAt(0).toUpperCase() + monthName.slice(1)}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-full sm:w-[150px]">
+                    <Activity className="w-4 h-4 mr-2" />
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os status</SelectItem>
+                    <SelectItem value="active">Ativas</SelectItem>
+                    <SelectItem value="paused">Pausadas</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Results and clear filters */}
+              {(searchTerm || dateRange?.from || dateRange?.to || creatorFilter !== "all" || creationMonthFilter !== "all" || statusFilter !== "all") && (
                 <div className="flex items-center gap-2">
                   <Badge variant="secondary" className="text-xs">
                     {filteredCampaigns.length} resultado{filteredCampaigns.length !== 1 ? 's' : ''}
@@ -321,7 +417,7 @@ const Campaigns = () => {
               <Card className="border shadow-sm">
                 <CardContent className="p-8 text-center">
                   <div className="text-muted-foreground mb-4">
-                    {searchTerm || dateRange?.from || dateRange?.to ? (
+                    {searchTerm || dateRange?.from || dateRange?.to || creatorFilter !== "all" || creationMonthFilter !== "all" || statusFilter !== "all" ? (
                       <>
                         <Filter className="w-12 h-12 mx-auto mb-2 opacity-40" />
                         <p>Nenhuma campanha encontrada com os filtros aplicados</p>

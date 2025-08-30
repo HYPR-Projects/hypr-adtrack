@@ -14,12 +14,15 @@ interface BreadcrumbProps {
 }
 
 export const Breadcrumb = ({ items }: BreadcrumbProps) => {
+  const location = useLocation();
 
   return (
     <nav className="flex items-center space-x-1 text-sm text-muted-foreground mb-6">
       {items.map((item, index) => {
-        const isLast = index === items.length - 1;
         const Icon = item.icon;
+        
+        // Determinar se este item está ativo baseado na rota atual
+        const isActive = item.href ? location.pathname === item.href : false;
 
         return (
           <div key={index} className="flex items-center">
@@ -31,7 +34,7 @@ export const Breadcrumb = ({ items }: BreadcrumbProps) => {
               <Link 
                 to={item.href}
                 className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${
-                  isLast 
+                  isActive 
                     ? 'bg-primary text-primary-foreground font-medium' 
                     : 'hover:bg-muted hover:text-foreground'
                 }`}
@@ -40,11 +43,7 @@ export const Breadcrumb = ({ items }: BreadcrumbProps) => {
                 {item.label}
               </Link>
             ) : (
-              <span className={`flex items-center gap-2 px-3 py-2 rounded-md ${
-                isLast 
-                  ? 'bg-primary text-primary-foreground font-medium' 
-                  : 'text-muted-foreground'
-              }`}>
+              <span className="flex items-center gap-2 px-3 py-2 rounded-md bg-primary text-primary-foreground font-medium">
                 {Icon && <Icon className="w-4 h-4" />}
                 {item.label}
               </span>

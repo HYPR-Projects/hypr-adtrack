@@ -14,12 +14,13 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BarChart3, Users, MousePointer, FileText, Search, Filter, Calendar, Building } from "lucide-react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 
 const Campanhas = () => {
   const { campaignGroups, loading } = useCampaignGroups();
   const { insertionOrders } = useInsertionOrders();
   const { insertionOrderId } = useParams();
+  const navigate = useNavigate();
   const { generateBreadcrumbs } = useBreadcrumbs();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -113,7 +114,29 @@ const Campanhas = () => {
             <div className="mb-6 p-4 bg-muted/30 rounded-lg border">
               <div className="flex items-center gap-2 mb-1">
                 <Building className="w-4 h-4 text-muted-foreground" />
-                <h2 className="text-lg font-semibold">{currentInsertionOrder.client_name}</h2>
+                <Select
+                  value={insertionOrderId}
+                  onValueChange={(value) => {
+                    if (value !== insertionOrderId) {
+                      // Reset local filters when switching
+                      setSearchTerm("");
+                      setStatusFilter("all");
+                      
+                      navigate(`/insertion-orders/${value}/campanhas`);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-auto border-none shadow-none p-0 h-auto text-lg font-semibold bg-transparent hover:bg-muted/50 focus:ring-0">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="z-50 bg-background border shadow-md">
+                    {insertionOrders.map((io) => (
+                      <SelectItem key={io.id} value={io.id}>
+                        {io.client_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               {currentInsertionOrder.description && (
                 <p className="text-sm text-muted-foreground">{currentInsertionOrder.description}</p>

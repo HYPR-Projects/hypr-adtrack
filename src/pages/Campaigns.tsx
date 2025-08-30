@@ -14,7 +14,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, BarChart3, MousePointer, FileText, Search, CalendarIcon, Filter, User, Activity } from "lucide-react";
+import { Plus, BarChart3, MousePointer, FileText, Search, CalendarIcon, Filter, User, Activity, Building } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
@@ -251,6 +251,12 @@ const Campaigns = () => {
             </div>
             <div className="flex gap-3">
               <UserMenu />
+              <Link to="/insertion-orders">
+                <Button variant="outline" className="gap-2">
+                  <Building className="w-4 h-4" />
+                  Insertion Orders
+                </Button>
+              </Link>
               <Link to="/reports">
                 <Button variant="outline" className="gap-2">
                   <FileText className="w-4 h-4" />

@@ -10,6 +10,7 @@ import Reports from "./pages/Reports";
 import Auth from "./pages/Auth";
 import AuthCallback from "./pages/AuthCallback";
 import NotFound from "./pages/NotFound";
+import InsertionOrders from "./pages/InsertionOrders";
 
 const App = () => (
   <AuthProvider>
@@ -20,7 +21,10 @@ const App = () => (
         <Routes>
           <Route path="/auth" element={<Auth />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route path="/" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
+          <Route path="/" element={<ProtectedRoute><InsertionOrders /></ProtectedRoute>} />
+          <Route path="/insertion-orders" element={<ProtectedRoute><InsertionOrders /></ProtectedRoute>} />
+          <Route path="/insertion-orders/:insertionOrderId/campaigns" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
+          <Route path="/insertion-orders/:insertionOrderId/campaigns/new" element={<ProtectedRoute><CampaignDetails /></ProtectedRoute>} />
           <Route path="/campaigns" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
           <Route path="/campaigns/:id" element={<ProtectedRoute><CampaignDetails /></ProtectedRoute>} />
           <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />

@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 export interface Campaign {
   id: string;
   user_id: string;
+  insertion_order_id?: string;
   name: string;
   description: string;
   status: 'active' | 'paused' | 'completed';
@@ -92,7 +93,8 @@ export const useCampaigns = () => {
             title,
             code,
             type,
-            created_at
+            created_at,
+            campaign_id
           )
         `)
         .order('created_at', { ascending: false })
@@ -200,6 +202,7 @@ export const useCampaigns = () => {
   const createCampaign = useCallback(async (campaignData: {
     name: string;
     description: string;
+    insertion_order_id?: string;
     start_date?: string;
     end_date?: string;
   }) => {
@@ -214,6 +217,7 @@ export const useCampaigns = () => {
         .insert([
           {
             user_id: user.id,
+            insertion_order_id: campaignData.insertion_order_id,
             name: campaignData.name,
             description: campaignData.description,
             start_date: startDate,

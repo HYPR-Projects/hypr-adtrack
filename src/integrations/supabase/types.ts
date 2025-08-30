@@ -206,7 +206,6 @@ export type Database = {
       campaign_metrics_daily: {
         Row: {
           campaign_id: string | null
-          campaign_name: string | null
           cta_clicks: number | null
           metric_date: string | null
           page_views: number | null

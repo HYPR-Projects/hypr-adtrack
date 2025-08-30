@@ -3,6 +3,7 @@ import { UserMenu } from "@/components/UserMenu";
 import { InsertionOrderCard } from "@/components/InsertionOrderCard";
 import { EditInsertionOrderDialog } from "@/components/EditInsertionOrderDialog";
 import { MetricsCard } from "@/components/MetricsCard";
+import { Breadcrumb, useBreadcrumbs } from "@/components/Breadcrumb";
 import { useInsertionOrders, type InsertionOrderWithMetrics } from "@/hooks/useInsertionOrders";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -148,6 +149,9 @@ const InsertionOrders = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deletingOrder, setDeletingOrder] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const { generateBreadcrumbs } = useBreadcrumbs();
+  const breadcrumbs = generateBreadcrumbs();
   
   // Get unique creators for filter options
   const uniqueCreators = useMemo(() => {
@@ -251,6 +255,9 @@ const InsertionOrders = () => {
       {/* Content */}
       <div className="pt-32">
         <div className="container mx-auto px-4 py-6">
+          {/* Breadcrumb Navigation */}
+          <Breadcrumb items={breadcrumbs} />
+          
           {/* Stats Overview */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             {loading ? (

@@ -16,7 +16,6 @@ interface EditInsertionOrderDialogProps {
 
 export const EditInsertionOrderDialog = ({ insertionOrder, open, onOpenChange }: EditInsertionOrderDialogProps) => {
   const [clientName, setClientName] = useState("");
-  const [projectName, setProjectName] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -29,7 +28,6 @@ export const EditInsertionOrderDialog = ({ insertionOrder, open, onOpenChange }:
   useEffect(() => {
     if (insertionOrder && open) {
       setClientName(insertionOrder.client_name);
-      setProjectName(insertionOrder.project_name || "");
       setDescription(insertionOrder.description || "");
       setStatus(insertionOrder.status);
       setStartDate(insertionOrder.start_date || "");
@@ -45,7 +43,6 @@ export const EditInsertionOrderDialog = ({ insertionOrder, open, onOpenChange }:
 
     const { error } = await updateInsertionOrder(insertionOrder.id, {
       client_name: clientName.trim(),
-      project_name: projectName.trim() || undefined,
       description: description.trim() || undefined,
       status: status as any,
       start_date: startDate || undefined,
@@ -91,16 +88,6 @@ export const EditInsertionOrderDialog = ({ insertionOrder, open, onOpenChange }:
               value={clientName}
               onChange={(e) => setClientName(e.target.value)}
               required
-              disabled={loading}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="projectName">Nome do Projeto</Label>
-            <Input
-              id="projectName"
-              placeholder="Ex: Campanha Black Friday 2024"
-              value={projectName}
-              onChange={(e) => setProjectName(e.target.value)}
               disabled={loading}
             />
           </div>

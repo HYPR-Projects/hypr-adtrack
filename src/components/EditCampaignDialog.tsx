@@ -139,7 +139,7 @@ export const EditCampaignDialog = ({ campaign, open, onOpenChange }: EditCampaig
                 <SelectItem value="none">Nenhuma insertion order</SelectItem>
                 {insertionOrders.map((io) => (
                   <SelectItem key={io.id} value={io.id}>
-                    {io.client_name} {io.project_name && `- ${io.project_name}`}
+                    {io.client_name}
                   </SelectItem>
                 ))}
               </SelectContent>

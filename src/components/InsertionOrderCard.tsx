@@ -56,12 +56,6 @@ export const InsertionOrderCard = memo(({ insertionOrder, onEdit, onDelete }: In
               </Badge>
             </div>
             
-            {insertionOrder.project_name && (
-              <CardDescription className="text-sm font-medium">
-                {insertionOrder.project_name}
-              </CardDescription>
-            )}
-            
             {insertionOrder.description && (
               <CardDescription className="text-sm mt-1">
                 {insertionOrder.description}

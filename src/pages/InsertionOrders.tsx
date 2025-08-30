@@ -21,7 +21,6 @@ import { Link } from "react-router-dom";
 const CreateInsertionOrderDialog = ({ onCreated }: { onCreated: () => void }) => {
   const [open, setOpen] = useState(false);
   const [clientName, setClientName] = useState("");
-  const [projectName, setProjectName] = useState("");
   const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -37,7 +36,6 @@ const CreateInsertionOrderDialog = ({ onCreated }: { onCreated: () => void }) =>
 
     const { error } = await createInsertionOrder({
       client_name: clientName.trim(),
-      project_name: projectName.trim() || undefined,
       description: description.trim() || undefined,
       start_date: startDate || undefined,
       end_date: endDate || undefined
@@ -57,7 +55,6 @@ const CreateInsertionOrderDialog = ({ onCreated }: { onCreated: () => void }) =>
       
       // Reset form
       setClientName("");
-      setProjectName("");
       setDescription("");
       setStartDate("");
       setEndDate("");
@@ -92,16 +89,6 @@ const CreateInsertionOrderDialog = ({ onCreated }: { onCreated: () => void }) =>
               value={clientName}
               onChange={(e) => setClientName(e.target.value)}
               required
-              disabled={loading}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="projectName">Nome do Projeto</Label>
-            <Input
-              id="projectName"
-              placeholder="Ex: Campanha Black Friday 2024"
-              value={projectName}
-              onChange={(e) => setProjectName(e.target.value)}
               disabled={loading}
             />
           </div>
@@ -177,7 +164,6 @@ const InsertionOrders = () => {
       // Search filter
       const matchesSearch = 
         order.client_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (order.project_name && order.project_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (order.description && order.description.toLowerCase().includes(searchTerm.toLowerCase()));
       
       // Creator filter

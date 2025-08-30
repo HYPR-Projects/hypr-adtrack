@@ -308,9 +308,6 @@ const Campaigns = () => {
               <div className="flex items-center gap-2 mb-1">
                 <Building className="w-4 h-4 text-muted-foreground" />
                 <h1 className="text-lg font-semibold">{currentInsertionOrder.client_name}</h1>
-                <Badge variant="outline" className="text-xs">
-                  {currentInsertionOrder.project_name || 'Sem projeto'}
-                </Badge>
               </div>
               {currentInsertionOrder.description && (
                 <p className="text-sm text-muted-foreground">{currentInsertionOrder.description}</p>

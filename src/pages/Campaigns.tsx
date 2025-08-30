@@ -277,6 +277,12 @@ const Campaigns = () => {
               </p>
             </div>
             <div className="flex gap-3">
+              <Link to="/reports">
+                <Button variant="outline" className="gap-2">
+                  <FileText className="w-4 h-4" />
+                  Relatórios
+                </Button>
+              </Link>
               <UserMenu />
             </div>
           </div>
@@ -291,12 +297,6 @@ const Campaigns = () => {
           
           {/* Actions Bar */}
           <div className="flex justify-end gap-3 mb-6">
-            <Link to="/reports">
-              <Button variant="outline" className="gap-2">
-                <FileText className="w-4 h-4" />
-                Relatórios
-              </Button>
-            </Link>
             <CreateCampaignDialog onCampaignCreated={handleCampaignCreated} insertionOrderId={insertionOrderId} />
           </div>
 

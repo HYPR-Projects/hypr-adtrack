@@ -12,15 +12,15 @@ interface MetricsCardProps {
 
 export const MetricsCard = memo(({ icon: Icon, value, label, className, iconColor }: MetricsCardProps) => {
   return (
-    <Card className="border shadow-sm">
-      <CardContent className="p-4">
-        <div className="flex items-center gap-3">
-          <div className={`p-2 rounded ${className || 'bg-muted'}`}>
-            <Icon className={`w-5 h-5 ${iconColor || 'text-muted-foreground'}`} />
+    <Card className="border shadow-sm hover:shadow-md transition-shadow duration-200">
+      <CardContent className="p-3 md:p-4">
+        <div className="flex items-center gap-2 md:gap-3">
+          <div className={`p-1.5 md:p-2 rounded-md ${className || 'bg-muted'}`}>
+            <Icon className={`w-4 h-4 md:w-5 md:h-5 ${iconColor || 'text-muted-foreground'}`} />
           </div>
-          <div>
-            <div className="text-xl font-semibold">{value}</div>
-            <div className="text-sm text-muted-foreground">{label}</div>
+          <div className="min-w-0 flex-1">
+            <div className="text-lg md:text-xl font-semibold truncate">{value}</div>
+            <div className="text-xs md:text-sm text-muted-foreground truncate">{label}</div>
           </div>
         </div>
       </CardContent>

@@ -28,10 +28,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
 }) => {
   return (
     <div className="min-h-screen bg-background">
-      {/* Sticky Header with glass effect */}
-      <div className="sticky top-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-md border-b">
-        <div className="container mx-auto px-3 md:px-4 py-3 md:py-4">
-          <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
+      {/* Sticky Header with glass effect - optimized */}
+      <header className="sticky top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-b backdrop-saturate-150 will-change-transform">
+        <div className="container mx-auto px-3 md:px-4 py-2 md:py-3">
+          <div className="flex flex-col gap-2 md:flex-row md:justify-between md:items-center">
             <div className="flex items-center gap-2 md:gap-4">
               {backButton && (
                 <Link to={backButton.href}>
@@ -64,36 +64,36 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Content with proper spacing */}
-      <div className="pt-4 md:pt-6">
+      {/* Content with proper spacing - optimized */}
+      <main className="pt-3 md:pt-4">
         <div className="container mx-auto px-3 md:px-4">
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-5">
             {/* Breadcrumbs */}
             {breadcrumbs && (
               <Breadcrumb items={breadcrumbs} />
             )}
             
-            {/* Context Bar (e.g., IO selector) */}
+            {/* Context Bar - optimized spacing */}
             {contextBar && (
-              <div className="bg-muted/30 rounded-lg border p-4">
+              <section className="bg-muted/30 rounded-lg border p-3 md:p-4">
                 {contextBar}
-              </div>
+              </section>
             )}
 
-            {/* Actions Bar */}
+            {/* Actions Bar - optimized */}
             {actions && (
-              <div className="flex justify-end">
+              <section className="flex justify-end">
                 {actions}
-              </div>
+              </section>
             )}
 
             {/* Main Content */}
             {children}
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

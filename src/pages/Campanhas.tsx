@@ -107,13 +107,13 @@ const Campanhas = () => {
       contextBar={contextBar}
     >
 
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        {/* Stats Overview - optimized grid */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6">
             {loading ? (
               Array.from({ length: 4 }).map((_, i) => (
                 <Card key={i} className="border shadow-sm">
-                  <CardContent className="p-4">
-                    <Skeleton className="h-16 w-full" />
+                  <CardContent className="p-3 md:p-4">
+                    <Skeleton className="h-12 md:h-16 w-full" />
                   </CardContent>
                 </Card>
               ))
@@ -129,46 +129,46 @@ const Campanhas = () => {
                   icon={Users}
                   value={activeCampaignGroups}
                   label="Campanhas Ativas"
-                  className="bg-muted"
-                  iconColor="text-green-600"
+                  className="bg-green-50 dark:bg-green-950"
+                  iconColor="text-green-600 dark:text-green-400"
                 />
                 
                 <MetricsCard
                   icon={BarChart3}
                   value={totalCriativos}
                   label="Total de Criativos"
-                  className="bg-muted"
-                  iconColor="text-blue-600"
+                  className="bg-blue-50 dark:bg-blue-950"
+                  iconColor="text-blue-600 dark:text-blue-400"
                 />
                 
                 <MetricsCard
                   icon={MousePointer}
                   value={totalClicks}
                   label="Total de Clicks"
-                  className="bg-muted"
-                  iconColor="text-purple-600"
+                  className="bg-purple-50 dark:bg-purple-950"
+                  iconColor="text-purple-600 dark:text-purple-400"
                 />
               </>
             )}
-          </div>
+          </section>
 
-        {/* Filters Section */}
-        <div className="p-4 bg-muted/30 rounded-lg border mb-6">
-            <div className="space-y-4">
-              {/* Search and Filters */}
-              <div className="flex flex-col sm:flex-row gap-3">
+        {/* Filters Section - optimized */}
+        <section className="p-3 md:p-4 bg-muted/30 rounded-lg border mb-4 md:mb-6">
+            <div className="space-y-3 md:space-y-4">
+              {/* Search and Filters - improved responsive layout */}
+              <div className="flex flex-col sm:flex-row gap-2 md:gap-3">
                 <div className="relative flex-1 max-w-sm">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
                     placeholder="Buscar campanhas..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 h-9 md:h-10"
                   />
                 </div>
 
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-full sm:w-[150px]">
+                  <SelectTrigger className="w-full sm:w-[150px] h-9 md:h-10">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent className="bg-background border shadow-md">
@@ -179,7 +179,7 @@ const Campanhas = () => {
                 </Select>
               </div>
               
-              {/* Results and clear filters */}
+              {/* Results and clear filters - optimized spacing */}
               {(searchTerm || statusFilter !== "all") && (
                 <div className="flex items-center gap-2">
                   <Badge variant="secondary" className="text-xs">
@@ -189,22 +189,22 @@ const Campanhas = () => {
                     variant="ghost" 
                     size="sm"
                     onClick={clearFilters}
-                    className="text-xs h-8"
+                    className="text-xs h-7 md:h-8"
                   >
                     Limpar filtros
                   </Button>
                 </div>
               )}
             </div>
-          </div>
+          </section>
 
-        {/* Campaign Groups List */}
-        <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h2 className="text-lg font-medium">
+        {/* Campaign Groups List - optimized spacing */}
+        <section className="space-y-3 md:space-y-4">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+              <h2 className="text-base md:text-lg font-medium">
                 Suas Campanhas {currentInsertionOrder ? `- ${currentInsertionOrder.client_name}` : ''}
               </h2>
-              <Badge variant="outline" className="text-xs">
+              <Badge variant="outline" className="text-xs w-fit">
                 {filteredCampaignGroups.length} campanha{filteredCampaignGroups.length !== 1 ? 's' : ''}
                 {filteredCampaignGroups.length !== relevantCampaignGroups.length && (
                   <span className="text-muted-foreground ml-1">de {relevantCampaignGroups.length}</span>
@@ -213,23 +213,23 @@ const Campanhas = () => {
             </div>
 
             {loading ? (
-              <div className="space-y-4">
-                {Array.from({ length: 2 }).map((_, i) => (
+              <div className="space-y-3 md:space-y-4">
+                {Array.from({ length: 3 }).map((_, i) => (
                   <Card key={i} className="border shadow-sm">
-                    <CardContent className="p-6">
-                      <Skeleton className="h-32 w-full" />
+                    <CardContent className="p-4 md:p-6">
+                      <Skeleton className="h-24 md:h-32 w-full" />
                     </CardContent>
                   </Card>
                 ))}
               </div>
             ) : filteredCampaignGroups.length === 0 ? (
               <Card className="border shadow-sm">
-                <CardContent className="p-8 text-center">
+                <CardContent className="p-6 md:p-8 text-center">
                   <div className="text-muted-foreground mb-4">
                     {searchTerm || statusFilter !== "all" ? (
                       <>
-                        <Filter className="w-12 h-12 mx-auto mb-2 opacity-40" />
-                        <p>Nenhuma campanha encontrada com os filtros aplicados</p>
+                        <Filter className="w-8 h-8 md:w-12 md:h-12 mx-auto mb-2 opacity-40" />
+                        <p className="text-sm md:text-base">Nenhuma campanha encontrada com os filtros aplicados</p>
                         <Button 
                           variant="link" 
                           onClick={clearFilters}
@@ -240,8 +240,8 @@ const Campanhas = () => {
                       </>
                     ) : (
                       <>
-                        <Users className="w-12 h-12 mx-auto mb-2 opacity-40" />
-                        <p className="mb-4">Nenhuma campanha criada ainda</p>
+                        <Users className="w-8 h-8 md:w-12 md:h-12 mx-auto mb-2 opacity-40" />
+                        <p className="mb-4 text-sm md:text-base">Nenhuma campanha criada ainda</p>
                         <CreateCampaignGroupDialog insertionOrderId={insertionOrderId} />
                       </>
                     )}
@@ -249,13 +249,13 @@ const Campanhas = () => {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid gap-4">
+              <div className="grid gap-3 md:gap-4">
                 {filteredCampaignGroups.map((group) => (
                   <CampaignGroupCard key={group.id} campaignGroup={group} />
                 ))}
               </div>
             )}
-        </div>
+        </section>
     </AppLayout>
   );
 };

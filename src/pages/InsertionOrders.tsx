@@ -242,13 +242,6 @@ const InsertionOrders = () => {
             </div>
             <div className="flex gap-3">
               <UserMenu />
-              <Link to="/reports">
-                <Button variant="outline" className="gap-2">
-                  <FileText className="w-4 h-4" />
-                  Relatórios
-                </Button>
-              </Link>
-              <CreateInsertionOrderDialog onCreated={handleCreated} />
             </div>
           </div>
         </div>
@@ -259,6 +252,17 @@ const InsertionOrders = () => {
         <div className="container mx-auto px-4 py-6">
           {/* Breadcrumb Navigation */}
           <Breadcrumb items={breadcrumbs} />
+          
+          {/* Actions Bar */}
+          <div className="flex justify-end gap-3 mb-6">
+            <Link to="/reports">
+              <Button variant="outline" className="gap-2">
+                <FileText className="w-4 h-4" />
+                Relatórios
+              </Button>
+            </Link>
+            <CreateInsertionOrderDialog onCreated={handleCreated} />
+          </div>
           
           {/* Stats Overview */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">

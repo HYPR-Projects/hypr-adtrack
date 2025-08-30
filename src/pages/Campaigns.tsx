@@ -278,13 +278,6 @@ const Campaigns = () => {
             </div>
             <div className="flex gap-3">
               <UserMenu />
-              <Link to="/reports">
-                <Button variant="outline" className="gap-2">
-                  <FileText className="w-4 h-4" />
-                  Relatórios
-                </Button>
-              </Link>
-              <CreateCampaignDialog onCampaignCreated={handleCampaignCreated} insertionOrderId={insertionOrderId} />
             </div>
           </div>
         </div>
@@ -295,6 +288,17 @@ const Campaigns = () => {
         <div className="container mx-auto px-4 py-6">
           {/* Breadcrumb */}
           <Breadcrumb items={breadcrumbItems} />
+          
+          {/* Actions Bar */}
+          <div className="flex justify-end gap-3 mb-6">
+            <Link to="/reports">
+              <Button variant="outline" className="gap-2">
+                <FileText className="w-4 h-4" />
+                Relatórios
+              </Button>
+            </Link>
+            <CreateCampaignDialog onCampaignCreated={handleCampaignCreated} insertionOrderId={insertionOrderId} />
+          </div>
 
           {/* Header with IO context */}
           {currentInsertionOrder && (

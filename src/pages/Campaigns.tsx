@@ -136,6 +136,7 @@ const Campaigns = () => {
   const [creatorFilter, setCreatorFilter] = useState<string>("all");
   const [creationMonthFilter, setCreationMonthFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [insertionOrderFilter, setInsertionOrderFilter] = useState<string>("all");
   
   // Get current insertion order if we're in that context
   const currentInsertionOrder = useMemo(() => {
@@ -143,11 +144,24 @@ const Campaigns = () => {
     return insertionOrders.find(io => io.id === insertionOrderId);
   }, [insertionOrderId, insertionOrders]);
 
-  // Filter campaigns by insertion order if specified
+  // Filter campaigns by insertion order if specified in URL
   const relevantCampaigns = useMemo(() => {
     if (!insertionOrderId) return campaigns;
     return campaigns.filter(campaign => campaign.insertion_order_id === insertionOrderId);
   }, [campaigns, insertionOrderId]);
+
+  // Get unique insertion orders for filter
+  const uniqueInsertionOrders = useMemo(() => {
+    const ioIds = campaigns
+      .map(c => c.insertion_order_id)
+      .filter(Boolean)
+      .filter((id, index, arr) => arr.indexOf(id) === index);
+    
+    return ioIds.map(id => {
+      const io = insertionOrders.find(io => io.id === id);
+      return io ? { id, name: io.client_name } : null;
+    }).filter(Boolean) as { id: string; name: string }[];
+  }, [campaigns, insertionOrders]);
 
   // Get unique creators and months for filter options
   const uniqueCreators = useMemo(() => {
@@ -170,7 +184,9 @@ const Campaigns = () => {
 
   // Filtered campaigns based on all filters
   const filteredCampaigns = useMemo(() => {
-    return relevantCampaigns.filter(campaign => {
+    let campaignsToFilter = insertionOrderId ? relevantCampaigns : campaigns;
+    
+    return campaignsToFilter.filter(campaign => {
       // Search filter
       const matchesSearch = 
         campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -198,9 +214,15 @@ const Campaigns = () => {
         statusFilter === "all" || 
         campaign.derivedStatus === statusFilter;
       
-      return matchesSearch && matchesDateRange && matchesCreator && matchesCreationMonth && matchesStatus;
+      // Insertion Order filter (only when not in IO context)
+      const matchesInsertionOrder = 
+        insertionOrderId || // Skip filter if we're already in IO context
+        insertionOrderFilter === "all" || 
+        campaign.insertion_order_id === insertionOrderFilter;
+      
+      return matchesSearch && matchesDateRange && matchesCreator && matchesCreationMonth && matchesStatus && matchesInsertionOrder;
     });
-  }, [relevantCampaigns, searchTerm, dateRange, creatorFilter, creationMonthFilter, statusFilter]);
+  }, [campaigns, relevantCampaigns, searchTerm, dateRange, creatorFilter, creationMonthFilter, statusFilter, insertionOrderFilter, insertionOrderId]);
   
   const totalCampaigns = filteredCampaigns.length;
   const activeCampaigns = filteredCampaigns.filter(c => c.derivedStatus === 'active').length;
@@ -212,6 +234,7 @@ const Campaigns = () => {
     setCreatorFilter("all");
     setCreationMonthFilter("all");
     setStatusFilter("all");
+    setInsertionOrderFilter("all");
   };
 
   const handleCampaignCreated = useCallback(() => {
@@ -372,8 +395,25 @@ const Campaigns = () => {
                 <DateRangePicker />
               </div>
               
-              {/* Second row: New filters */}
+              {/* Second row: Filters */}
               <div className="flex flex-col sm:flex-row gap-3">
+                {!insertionOrderId && (
+                  <Select value={insertionOrderFilter} onValueChange={setInsertionOrderFilter}>
+                    <SelectTrigger className="w-full sm:w-[200px]">
+                      <Building className="w-4 h-4 mr-2" />
+                      <SelectValue placeholder="Insertion Order" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas as IOs</SelectItem>
+                      {uniqueInsertionOrders.map((io) => (
+                        <SelectItem key={io.id} value={io.id}>
+                          {io.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
                 <Select value={creatorFilter} onValueChange={setCreatorFilter}>
                   <SelectTrigger className="w-full sm:w-[200px]">
                     <User className="w-4 h-4 mr-2" />
@@ -425,7 +465,7 @@ const Campaigns = () => {
               </div>
               
               {/* Results and clear filters */}
-              {(searchTerm || dateRange?.from || dateRange?.to || creatorFilter !== "all" || creationMonthFilter !== "all" || statusFilter !== "all") && (
+              {(searchTerm || dateRange?.from || dateRange?.to || creatorFilter !== "all" || creationMonthFilter !== "all" || statusFilter !== "all" || insertionOrderFilter !== "all") && (
                 <div className="flex items-center gap-2">
                   <Badge variant="secondary" className="text-xs">
                     {filteredCampaigns.length} resultado{filteredCampaigns.length !== 1 ? 's' : ''}

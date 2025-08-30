@@ -101,7 +101,7 @@ export const useCampaigns = () => {
           )
         `)
         .order('created_at', { ascending: false })
-        .limit(50); // Limite para performance inicial
+        .limit(100); // Aumentar limite inicial mas implementar paginação
 
       if (campaignsError) throw campaignsError;
 
@@ -146,7 +146,7 @@ export const useCampaigns = () => {
               .in('tag_id', tagIds)
               .gte('created_at', sevenDaysAgo.toISOString())
               .order('created_at', { ascending: false })
-              .limit(1000); // Limite para performance
+              .limit(500); // Otimizar limite de eventos
 
             if (!eventsError && eventsData) {
               const now = new Date();

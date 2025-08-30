@@ -31,7 +31,7 @@ export const CampaignGroupCard = ({ campaignGroup, onEdit }: CampaignGroupCardPr
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">
           <Link 
-            to={`/insertion-orders/${campaignGroup.insertion_order_id}/campaigns/${campaignGroup.id}/creatives`}
+            to={`/insertion-orders/${campaignGroup.insertion_order_id}/campaign-groups/${campaignGroup.id}/creatives`}
             className="hover:underline"
           >
             {campaignGroup.name}

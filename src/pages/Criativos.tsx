@@ -221,7 +221,7 @@ const Criativos = () => {
 
   // Filtered campaigns based on all filters
   const filteredCampaigns = useMemo(() => {
-    let campaignsToFilter = insertionOrderId ? relevantCampaigns : campaigns;
+    let campaignsToFilter = (insertionOrderId || campaignGroupId) ? relevantCampaigns : campaigns;
     
     return campaignsToFilter.filter(campaign => {
       // Search filter

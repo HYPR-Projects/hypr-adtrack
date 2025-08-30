@@ -568,7 +568,7 @@ const CampaignDetails = () => {
                 className="gap-2"
               >
                 <Settings className="w-4 h-4" />
-                Editar Campanha
+                Editar Criativo
               </Button>
               <Button onClick={exportToCSV} className="gap-2">
                 <Download className="w-4 h-4" />

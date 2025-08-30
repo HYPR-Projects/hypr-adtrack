@@ -42,6 +42,7 @@ export interface CampaignWithTags extends Campaign {
     pin_clicks: number;
     page_views: number;
     total_7d: number;
+    last_hour: number;
   };
   derivedStatus: 'active' | 'paused';
 }
@@ -128,7 +129,8 @@ export const useCampaigns = () => {
             cta_clicks: 0,
             pin_clicks: 0,
             page_views: 0,
-            total_7d: 0
+            total_7d: 0,
+            last_hour: 0
           };
 
           if (tagIds.length > 0) {
@@ -151,7 +153,7 @@ export const useCampaigns = () => {
             if (!eventsError && eventsData) {
               const now = new Date();
               const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-              const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+              const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
 
               eventsData.forEach((event) => {
                 const eventDate = new Date(event.created_at);
@@ -163,6 +165,11 @@ export const useCampaigns = () => {
                 // Count total events in last 7 days
                 if (eventDate >= sevenDaysAgo) {
                   metrics.total_7d++;
+                }
+
+                // Count total events in last hour
+                if (eventDate >= oneHourAgo) {
+                  metrics.last_hour++;
                 }
 
                 // Count by classified event type
@@ -270,7 +277,8 @@ export const useCampaigns = () => {
           cta_clicks: 0,
           pin_clicks: 0,
           page_views: 0,
-          total_7d: 0
+          total_7d: 0,
+          last_hour: 0
         },
         derivedStatus: 'paused' // New campaigns start as paused until they have activity
       };

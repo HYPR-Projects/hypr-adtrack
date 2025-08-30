@@ -57,9 +57,14 @@ export const CampaignCard = memo(({ campaign }: CampaignCardProps) => {
                 )}
               </div>
             </div>
-            <Badge variant={campaign.derivedStatus === 'active' ? 'default' : 'secondary'} className="text-xs shrink-0">
-              {campaign.derivedStatus === 'active' ? 'Ativa' : 'Pausada'}
-            </Badge>
+            <div className="flex flex-col gap-1 items-end">
+              <Badge variant={campaign.derivedStatus === 'active' ? 'default' : 'secondary'} className="text-xs shrink-0">
+                {campaign.derivedStatus === 'active' ? 'Ativa' : 'Pausada'}
+              </Badge>
+              <Badge variant="outline" className="text-xs shrink-0 bg-muted/50">
+                Últ. hora: {campaign.metrics.last_hour}
+              </Badge>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="pt-0 px-4 md:px-6 pb-4 md:pb-6" onClick={(e) => e.preventDefault()}>

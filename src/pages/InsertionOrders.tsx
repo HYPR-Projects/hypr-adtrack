@@ -151,9 +151,7 @@ const InsertionOrders = () => {
   const { toast } = useToast();
 
   const { generateBreadcrumbs } = useBreadcrumbs();
-  const breadcrumbs = [
-    { label: "Insertion Orders", icon: Building }
-  ];
+  const breadcrumbs = generateBreadcrumbs();
   
   // Get unique creators for filter options
   const uniqueCreators = useMemo(() => {

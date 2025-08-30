@@ -218,7 +218,7 @@ const Campaigns = () => {
   }, []);
 
   // Generate breadcrumbs based on current context
-  const breadcrumbItems = generateBreadcrumbs(currentInsertionOrder?.client_name);
+  const breadcrumbItems = generateBreadcrumbs();
 
   const DateRangePicker = () => (
     <Popover>

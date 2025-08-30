@@ -64,35 +64,15 @@ export const useBreadcrumbs = () => {
   ): BreadcrumbItem[] => {
     const items: BreadcrumbItem[] = [];
 
-    // Sempre começar com Insertion Orders se não estivermos na home
-    if (pathname !== '/') {
-      items.push({
-        label: 'Insertion Orders',
-        href: '/',
-        icon: Building
-      });
-    }
+    // Sempre começar com Insertion Orders (home)
+    items.push({
+      label: 'Insertion Orders',
+      href: '/',
+      icon: Building
+    });
 
-    // Se estivermos em campanhas de uma IO específica
-    if (pathname.includes('/insertion-orders/') && pathname.includes('/campaigns')) {
-      if (insertionOrderName) {
-        const ioId = pathname.split('/insertion-orders/')[1]?.split('/')[0];
-        items.push({
-          label: insertionOrderName,
-          href: '/',
-          icon: Building
-        });
-        
-        items.push({
-          label: 'Campanhas',
-          href: `/insertion-orders/${ioId}/campaigns`,
-          icon: FolderOpen
-        });
-      }
-    }
-    
-    // Se estivermos em campanhas gerais
-    else if (pathname.startsWith('/campaigns') && !pathname.includes('/insertion-orders/')) {
+    // Se estivermos em qualquer página de campanhas, adicionar Campanhas
+    if (pathname.includes('/campaigns') || pathname.startsWith('/campaigns')) {
       items.push({
         label: 'Campanhas',
         href: '/campaigns',
@@ -100,7 +80,7 @@ export const useBreadcrumbs = () => {
       });
     }
 
-    // Se estivermos em detalhes de campanha
+    // Se estivermos em detalhes de campanha específica
     if (pathname.includes('/campaigns/') && campaignName && !pathname.endsWith('/new')) {
       items.push({
         label: campaignName,

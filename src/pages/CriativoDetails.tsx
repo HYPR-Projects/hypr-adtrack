@@ -12,7 +12,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Breadcrumb, useBreadcrumbs } from "@/components/Breadcrumb";
-import { ArrowLeft, Copy, MousePointer, Eye, Calendar, TrendingUp, Download, Tag as TagIcon, Trash2, User, Radio, Activity, Settings } from "lucide-react";
+import { UserMenu } from "@/components/UserMenu";
+import { ArrowLeft, Copy, MousePointer, Eye, Calendar, TrendingUp, Download, Tag as TagIcon, Trash2, User, Radio, Activity, Settings, BarChart3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import AddTagDialog from "@/components/AddTagDialog";
 import { EditCampaignDialog } from "@/components/EditCampaignDialog";
@@ -561,6 +562,28 @@ const CampaignDetails = () => {
                 </div>
               </div>
             </div>
+            <div className="flex items-center gap-3">
+              <Link to="/reports">
+                <Button variant="outline" size="sm" className="gap-2">
+                  <BarChart3 className="w-4 h-4" />
+                  Relatórios
+                </Button>
+              </Link>
+              <UserMenu />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Content with top padding to account for fixed header */}
+      <div className="pt-32">
+        <div className="container mx-auto px-4 py-6">
+          {/* Breadcrumb */}
+          <Breadcrumb items={breadcrumbItems} />
+          
+          {/* Actions Bar */}
+          <div className="flex items-center justify-between mb-6">
+            <div></div>
             <div className="flex gap-2">
               <Button 
                 variant="outline" 
@@ -576,14 +599,6 @@ const CampaignDetails = () => {
               </Button>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Content with top padding to account for fixed header */}
-      <div className="pt-32">
-        <div className="container mx-auto px-4 py-6">
-          {/* Breadcrumb */}
-          <Breadcrumb items={breadcrumbItems} />
           
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <Card className="border shadow-sm">

@@ -70,19 +70,26 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen relative flex">
+      {/* Background image covering full screen */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat" 
+        style={{backgroundImage: "url('/lovable-uploads/d177fad6-08ba-4f61-b459-0f35fe3e81f4.png')"}}
+      >
+        <div className="absolute inset-0 bg-black/30"></div>
+      </div>
+
       {/* Left side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-cover bg-center bg-no-repeat flex-col justify-center items-center p-12 relative" style={{backgroundImage: "url('/lovable-uploads/d177fad6-08ba-4f61-b459-0f35fe3e81f4.png')"}}>
-        <div className="absolute inset-0 bg-black/20"></div>
+      <div className="hidden lg:flex lg:w-1/2 flex-col justify-center items-center p-12 relative z-10">
         <img 
           src="/lovable-uploads/6bbb35ef-f702-4718-b5c3-d8180d317be4.png" 
           alt="HYPR TRACKING" 
-          className="h-8 object-contain relative z-10"
+          className="h-8 object-contain"
         />
       </div>
 
-      {/* Right side - Auth Forms */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6">
+      {/* Right side - Auth Forms with Glass Effect */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 relative z-10 backdrop-blur-xl bg-background/80 border-l border-border/20">
         <div className="w-full max-w-md space-y-6">
           <div className="text-center space-y-2">
             <div className="lg:hidden w-12 h-12 bg-primary rounded-lg flex items-center justify-center mx-auto mb-4">

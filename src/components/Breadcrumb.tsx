@@ -16,7 +16,7 @@ interface BreadcrumbProps {
 export const Breadcrumb = ({ items }: BreadcrumbProps) => {
 
   return (
-    <nav className="flex items-center space-x-1 text-sm text-muted-foreground mb-4">
+    <nav className="flex items-center space-x-1 text-sm text-muted-foreground mb-6">
       {items.map((item, index) => {
         const isLast = index === items.length - 1;
         const Icon = item.icon;
@@ -24,24 +24,27 @@ export const Breadcrumb = ({ items }: BreadcrumbProps) => {
         return (
           <div key={index} className="flex items-center">
             {index > 0 && (
-              <ChevronRight className="w-4 h-4 mx-1 text-muted-foreground/60" />
+              <ChevronRight className="w-4 h-4 mx-2 text-muted-foreground/60" />
             )}
             
-            {isLast ? (
-              <span className="flex items-center gap-1 text-foreground font-medium">
-                {Icon && <Icon className="w-4 h-4" />}
-                {item.label}
-              </span>
-            ) : item.href ? (
+            {item.href ? (
               <Link 
                 to={item.href}
-                className="flex items-center gap-1 hover:text-foreground transition-colors"
+                className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${
+                  isLast 
+                    ? 'bg-primary text-primary-foreground font-medium' 
+                    : 'hover:bg-muted hover:text-foreground'
+                }`}
               >
                 {Icon && <Icon className="w-4 h-4" />}
                 {item.label}
               </Link>
             ) : (
-              <span className="flex items-center gap-1">
+              <span className={`flex items-center gap-2 px-3 py-2 rounded-md ${
+                isLast 
+                  ? 'bg-primary text-primary-foreground font-medium' 
+                  : 'text-muted-foreground'
+              }`}>
                 {Icon && <Icon className="w-4 h-4" />}
                 {item.label}
               </span>
@@ -64,21 +67,19 @@ export const useBreadcrumbs = () => {
   ): BreadcrumbItem[] => {
     const items: BreadcrumbItem[] = [];
 
-    // Sempre começar com Insertion Orders (home)
+    // Sempre começar com Insertion Orders
     items.push({
       label: 'Insertion Orders',
       href: '/',
       icon: Building
     });
 
-    // Se estivermos em campanhas de uma IO específica ou campanhas gerais
-    if (pathname.includes('/campaigns') || pathname.startsWith('/campaigns')) {
-      items.push({
-        label: 'Campanhas',
-        href: '/campaigns',
-        icon: FolderOpen
-      });
-    }
+    // Sempre adicionar Campanhas como segunda opção
+    items.push({
+      label: 'Campanhas',
+      href: '/campaigns',
+      icon: FolderOpen
+    });
 
     // Se estivermos em detalhes de campanha específica
     if (pathname.includes('/campaigns/') && campaignName && !pathname.endsWith('/new')) {

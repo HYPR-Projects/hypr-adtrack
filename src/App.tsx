@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import Campanhas from "./pages/Campanhas";
 import Criativos from "./pages/Criativos";
 import CriativoDetails from "./pages/CriativoDetails";
 import Reports from "./pages/Reports";
@@ -23,6 +24,8 @@ const App = () => (
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/" element={<ProtectedRoute><InsertionOrders /></ProtectedRoute>} />
           <Route path="/insertion-orders" element={<ProtectedRoute><InsertionOrders /></ProtectedRoute>} />
+          <Route path="/insertion-orders/:insertionOrderId/campanhas" element={<ProtectedRoute><Campanhas /></ProtectedRoute>} />
+          <Route path="/campanhas/:campaignGroupId/criativos" element={<ProtectedRoute><Criativos /></ProtectedRoute>} />
           <Route path="/insertion-orders/:insertionOrderId/criativos" element={<ProtectedRoute><Criativos /></ProtectedRoute>} />
           <Route path="/insertion-orders/:insertionOrderId/criativos/new" element={<ProtectedRoute><CriativoDetails /></ProtectedRoute>} />
           <Route path="/criativos" element={<ProtectedRoute><Criativos /></ProtectedRoute>} />

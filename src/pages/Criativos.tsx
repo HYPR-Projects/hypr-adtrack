@@ -25,15 +25,19 @@ import type { DateRange } from "react-day-picker";
 
 // Componentes otimizados agora estão em arquivos separados
 
+interface CreateCriativoDialogProps {
+  onCriativoCreated: () => void;
+  insertionOrderId?: string;
+  campaignGroupId?: string;
+  createCampaign: (data: { name: string; description: string; insertion_order_id?: string; campaign_group_id: string; iab_format?: string }) => Promise<{ error: any }>;
+}
+
 const CreateCriativoDialog = ({ 
   onCriativoCreated,
   insertionOrderId,
+  campaignGroupId,
   createCampaign
-}: { 
-  onCriativoCreated: () => void;
-  insertionOrderId?: string;
-  createCampaign: (data: any) => Promise<any>;
-}) => {
+}: CreateCriativoDialogProps) => {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -47,11 +51,21 @@ const CreateCriativoDialog = ({
 
     setLoading(true);
 
+    if (!campaignGroupId) {
+      toast({
+        title: "Erro",
+        description: "ID da campanha não encontrado.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const { error } = await createCampaign({
       name: name.trim(),
       description: description.trim(),
       iab_format: iabFormat,
-      insertion_order_id: insertionOrderId
+      insertion_order_id: insertionOrderId,
+      campaign_group_id: campaignGroupId
     });
 
     if (error) {

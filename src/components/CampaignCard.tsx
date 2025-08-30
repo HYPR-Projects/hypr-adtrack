@@ -35,6 +35,25 @@ export const CampaignCard = memo(({ campaign }: CampaignCardProps) => {
         <CardHeader className="pb-3 px-4 md:px-6 py-4 md:py-6">
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-3 lg:gap-4">
             <div className="flex-1 min-w-0">
+              {/* Campaign Group and Insertion Order Info */}
+              {(campaign.campaign_group || campaign.insertion_order) && (
+                <div className="flex flex-wrap gap-1 mb-2">
+                  {campaign.campaign_group && (
+                    <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                      {campaign.campaign_group.name.length > 20 
+                        ? `${campaign.campaign_group.name.slice(0, 20)}...` 
+                        : campaign.campaign_group.name}
+                    </Badge>
+                  )}
+                  {campaign.insertion_order && (
+                    <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                      {campaign.insertion_order.client_name.length > 20 
+                        ? `${campaign.insertion_order.client_name.slice(0, 20)}...` 
+                        : campaign.insertion_order.client_name}
+                    </Badge>
+                  )}
+                </div>
+              )}
               <CardTitle className="text-sm md:text-lg font-semibold hover:text-blue-600 transition-colors break-words">
                 {campaign.name}
               </CardTitle>

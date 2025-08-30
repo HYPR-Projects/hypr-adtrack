@@ -37,6 +37,12 @@ export interface Profile {
 export interface CampaignWithTags extends Campaign {
   tags: Tag[];
   profile?: Profile;
+  campaign_group?: {
+    name: string;
+  };
+  insertion_order?: {
+    client_name: string;
+  };
   metrics: {
     cta_clicks: number;
     pin_clicks: number;
@@ -99,6 +105,12 @@ export const useCampaigns = () => {
             type,
             created_at,
             campaign_id
+          ),
+          campaign_groups!inner (
+            name
+          ),
+          insertion_orders (
+            client_name
           )
         `)
         .order('created_at', { ascending: false })
@@ -207,6 +219,8 @@ export const useCampaigns = () => {
             ...campaign,
             tags: campaign.tags || [],
             profile,
+            campaign_group: (campaign as any).campaign_groups,
+            insertion_order: (campaign as any).insertion_orders,
             metrics,
             derivedStatus: hasRecentActivity ? 'active' : 'paused'
           } as CampaignWithTags;

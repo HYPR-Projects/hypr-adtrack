@@ -195,14 +195,14 @@ const Campaigns = () => {
       // Status filter
       const matchesStatus = 
         statusFilter === "all" || 
-        campaign.status === statusFilter;
+        campaign.derivedStatus === statusFilter;
       
       return matchesSearch && matchesDateRange && matchesCreator && matchesCreationMonth && matchesStatus;
     });
   }, [relevantCampaigns, searchTerm, dateRange, creatorFilter, creationMonthFilter, statusFilter]);
   
   const totalCampaigns = filteredCampaigns.length;
-  const activeCampaigns = filteredCampaigns.filter(c => c.status === 'active').length;
+  const activeCampaigns = filteredCampaigns.filter(c => c.derivedStatus === 'active').length;
   const totalClicks = filteredCampaigns.reduce((sum, c) => sum + c.metrics.cta_clicks + c.metrics.pin_clicks, 0);
 
   const clearFilters = () => {

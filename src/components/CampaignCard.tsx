@@ -48,8 +48,8 @@ export const CampaignCard = memo(({ campaign }: CampaignCardProps) => {
                 Criado em: {new Date(campaign.created_at).toLocaleDateString('pt-BR')}
               </div>
             </div>
-            <Badge variant={campaign.status === 'active' ? 'default' : 'secondary'} className="text-xs">
-              {campaign.status === 'active' ? 'Ativa' : 'Pausada'}
+            <Badge variant={campaign.derivedStatus === 'active' ? 'default' : 'secondary'} className="text-xs">
+              {campaign.derivedStatus === 'active' ? 'Ativa' : 'Pausada'}
             </Badge>
           </div>
         </CardHeader>

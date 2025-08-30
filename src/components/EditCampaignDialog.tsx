@@ -19,7 +19,6 @@ interface EditCampaignDialogProps {
 export const EditCampaignDialog = ({ campaign, open, onOpenChange }: EditCampaignDialogProps) => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [status, setStatus] = useState("");
   const [insertionOrderId, setInsertionOrderId] = useState("");
   const [loading, setLoading] = useState(false);
   const { insertionOrders } = useInsertionOrders();
@@ -30,7 +29,6 @@ export const EditCampaignDialog = ({ campaign, open, onOpenChange }: EditCampaig
     if (campaign && open) {
       setName(campaign.name);
       setDescription(campaign.description || "");
-      setStatus(campaign.status);
       setInsertionOrderId(campaign.insertion_order_id || "none");
     }
   }, [campaign, open]);
@@ -65,7 +63,6 @@ export const EditCampaignDialog = ({ campaign, open, onOpenChange }: EditCampaig
     const updates = {
       name: name.trim(),
       description: description.trim() || null,
-      status: status,
       insertion_order_id: insertionOrderId === "none" ? null : insertionOrderId,
       updated_at: new Date().toISOString()
     };
@@ -149,18 +146,6 @@ export const EditCampaignDialog = ({ campaign, open, onOpenChange }: EditCampaig
             </p>
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="status">Status</Label>
-            <Select value={status} onValueChange={setStatus} disabled={loading}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">Ativa</SelectItem>
-                <SelectItem value="paused">Pausada</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
           
           <div className="flex gap-3 pt-4">
             <Button type="button" variant="outline" onClick={handleClose} className="flex-1" disabled={loading}>

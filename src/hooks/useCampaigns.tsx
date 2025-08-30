@@ -41,6 +41,7 @@ export interface CampaignWithTags extends Campaign {
     page_views: number;
     total_7d: number;
   };
+  derivedStatus: 'active' | 'paused';
 }
 
 // Função utilitária para classificar eventos baseado no tipo da tag
@@ -148,6 +149,7 @@ export const useCampaigns = () => {
             if (!eventsError && eventsData) {
               const now = new Date();
               const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+              const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
               eventsData.forEach((event) => {
                 const eventDate = new Date(event.created_at);
@@ -177,11 +179,27 @@ export const useCampaigns = () => {
             }
           }
 
+          // Calculate derived status based on activity in last 24 hours
+          const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+          let hasRecentActivity = false;
+          
+          if (tagIds.length > 0) {
+            const { data: recentEvents } = await supabase
+              .from('events')
+              .select('id')
+              .in('tag_id', tagIds)
+              .gte('created_at', twentyFourHoursAgo.toISOString())
+              .limit(1);
+            
+            hasRecentActivity = (recentEvents?.length || 0) > 0;
+          }
+
           return {
             ...campaign,
             tags: campaign.tags || [],
             profile,
-            metrics
+            metrics,
+            derivedStatus: hasRecentActivity ? 'active' : 'paused'
           } as CampaignWithTags;
         })
       );
@@ -242,7 +260,8 @@ export const useCampaigns = () => {
           pin_clicks: 0,
           page_views: 0,
           total_7d: 0
-        }
+        },
+        derivedStatus: 'paused' // New campaigns start as paused until they have activity
       };
       
       setCampaigns(prev => [newCampaignWithMetrics, ...prev]);

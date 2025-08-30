@@ -18,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, BarChart3, MousePointer, FileText, Search, CalendarIcon, Filter, User, Activity, Building } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import type { DateRange } from "react-day-picker";
@@ -131,6 +131,7 @@ const Campaigns = () => {
   const { insertionOrders } = useInsertionOrders();
   const { insertionOrderId } = useParams();
   const { generateBreadcrumbs } = useBreadcrumbs();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [creatorFilter, setCreatorFilter] = useState<string>("all");
@@ -333,7 +334,33 @@ const Campaigns = () => {
             <div className="mb-6 p-4 bg-muted/30 rounded-lg border">
               <div className="flex items-center gap-2 mb-1">
                 <Building className="w-4 h-4 text-muted-foreground" />
-                <h1 className="text-lg font-semibold">{currentInsertionOrder.client_name}</h1>
+                <Select
+                  value={insertionOrderId}
+                  onValueChange={(value) => {
+                    if (value !== insertionOrderId) {
+                      // Reset local filters when switching
+                      setSearchTerm("");
+                      setDateRange(undefined);
+                      setCreatorFilter("all");
+                      setCreationMonthFilter("all");
+                      setStatusFilter("all");
+                      setInsertionOrderFilter("all");
+                      
+                      navigate(`/insertion-orders/${value}/campaigns`);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-auto border-none shadow-none p-0 h-auto text-lg font-semibold bg-transparent hover:bg-muted/50 focus:ring-0">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="z-50 bg-background border shadow-md">
+                    {insertionOrders.map((io) => (
+                      <SelectItem key={io.id} value={io.id}>
+                        {io.client_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               {currentInsertionOrder.description && (
                 <p className="text-sm text-muted-foreground">{currentInsertionOrder.description}</p>

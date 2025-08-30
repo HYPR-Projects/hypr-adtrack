@@ -33,48 +33,53 @@ export const CampaignCard = memo(({ campaign }: CampaignCardProps) => {
     <Link to={`/criativos/${campaign.id}`} className="block">
       <Card className="border shadow-sm hover:shadow-md transition-shadow cursor-pointer h-full">
         <CardHeader className="pb-3 px-4 md:px-6 py-4 md:py-6">
-          <div className="flex justify-between items-start">
-            <div>
-              <CardTitle className="text-lg font-semibold hover:text-blue-600 transition-colors">
+          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-3 lg:gap-4">
+            <div className="flex-1 min-w-0">
+              <CardTitle className="text-sm md:text-lg font-semibold hover:text-blue-600 transition-colors break-words">
                 {campaign.name}
               </CardTitle>
-              <CardDescription className="text-sm">{campaign.description}</CardDescription>
+              {campaign.description && (
+                <CardDescription className="text-xs md:text-sm break-words">{campaign.description}</CardDescription>
+              )}
               {campaign.profile && (
                 <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-                  <span>Criado por: {campaign.profile.email}</span>
+                  <span className="break-all">Criado por: {campaign.profile.email}</span>
                 </div>
               )}
-              <div className="flex items-center gap-2 mt-1">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mt-1">
                 <div className="text-xs text-muted-foreground">
                   Criado em: {new Date(campaign.created_at).toLocaleDateString('pt-BR')}
                 </div>
                 {campaign.creative_format && (
-                  <Badge variant="outline" className="text-xs">
+                  <Badge variant="outline" className="text-xs w-fit">
                     {campaign.creative_format}
                   </Badge>
                 )}
               </div>
             </div>
-            <Badge variant={campaign.derivedStatus === 'active' ? 'default' : 'secondary'} className="text-xs">
+            <Badge variant={campaign.derivedStatus === 'active' ? 'default' : 'secondary'} className="text-xs shrink-0">
               {campaign.derivedStatus === 'active' ? 'Ativa' : 'Pausada'}
             </Badge>
           </div>
         </CardHeader>
         <CardContent className="pt-0 px-4 md:px-6 pb-4 md:pb-6" onClick={(e) => e.preventDefault()}>
           <div className="space-y-3 md:space-y-4">
-            {/* Métricas simples */}
-            <div className="grid grid-cols-3 gap-2 md:gap-3">
-              <div className="text-center p-2 md:p-3 bg-muted/50 rounded border">
+            {/* Métricas responsivas - stack no mobile, grid no desktop */}
+            <div className="flex flex-col sm:grid sm:grid-cols-3 gap-2 md:gap-3">
+              <div className="flex justify-between items-center sm:flex-col sm:text-center p-2 md:p-3 bg-muted/50 rounded border">
+                <div className="sm:hidden text-xs text-muted-foreground">Click Button</div>
                 <div className="text-sm md:text-lg font-semibold">{campaign.metrics.cta_clicks}</div>
-                <div className="text-xs text-muted-foreground">Click Button</div>
+                <div className="hidden sm:block text-xs text-muted-foreground">Click Button</div>
               </div>
-              <div className="text-center p-2 md:p-3 bg-muted/50 rounded border">
+              <div className="flex justify-between items-center sm:flex-col sm:text-center p-2 md:p-3 bg-muted/50 rounded border">
+                <div className="sm:hidden text-xs text-muted-foreground">PIN Clicks</div>
                 <div className="text-sm md:text-lg font-semibold">{campaign.metrics.pin_clicks}</div>
-                <div className="text-xs text-muted-foreground">PIN Clicks</div>
+                <div className="hidden sm:block text-xs text-muted-foreground">PIN Clicks</div>
               </div>
-              <div className="text-center p-2 md:p-3 bg-muted/50 rounded border">
+              <div className="flex justify-between items-center sm:flex-col sm:text-center p-2 md:p-3 bg-muted/50 rounded border">
+                <div className="sm:hidden text-xs text-muted-foreground">CTR</div>
                 <div className="text-sm md:text-lg font-semibold">{ctr}%</div>
-                <div className="text-xs text-muted-foreground">CTR</div>
+                <div className="hidden sm:block text-xs text-muted-foreground">CTR</div>
               </div>
             </div>
 
@@ -91,12 +96,14 @@ export const CampaignCard = memo(({ campaign }: CampaignCardProps) => {
               ) : (
                 <div className="space-y-1.5 md:space-y-2">
                   {campaign.tags.slice(0, 2).map((tag) => (
-                    <div key={tag.id} className="flex items-center gap-1.5 md:gap-2 flex-wrap">
-                      <Badge variant="outline" className="text-xs">
-                        {tag.type.toUpperCase()}
-                      </Badge>
-                      <span className="text-xs font-medium truncate flex-1 min-w-0">{tag.title}</span>
-                      <code className="text-xs bg-muted px-1.5 md:px-2 py-1 rounded font-mono truncate max-w-[80px] md:max-w-none">
+                    <div key={tag.id} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <Badge variant="outline" className="text-xs">
+                          {tag.type.toUpperCase()}
+                        </Badge>
+                        <span className="text-xs font-medium break-words">{tag.title}</span>
+                      </div>
+                      <code className="text-xs bg-muted px-1.5 md:px-2 py-1 rounded font-mono break-all">
                         {tag.code}
                       </code>
                     </div>

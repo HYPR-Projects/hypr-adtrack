@@ -89,7 +89,7 @@ const Auth = () => {
               <Target className="w-6 h-6 text-primary-foreground" />
             </div>
             <h2 className="text-2xl font-bold text-foreground">
-              Bem-vindo ao HYPR
+              HYPR Tracking
             </h2>
             <p className="text-sm text-muted-foreground">
               Acesse sua conta para gerenciar campanhas

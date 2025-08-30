@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { startOfDay, startOfWeek, startOfMonth, format, subDays } from 'date-fns';
 
@@ -66,35 +66,33 @@ export const useReportEvents = ({ selectedCampaignIds, dateRange, groupBy, selec
     return { from, to };
   }, [dateRange]);
 
-  useEffect(() => {
+  const fetchReportData = useCallback(async () => {
     if (selectedCampaignIds.length === 0) {
       setData([]);
       return;
     }
 
-    const fetchReportData = async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        // 1. Fetch campaigns with their tags
-        const { data: campaignsData, error: campaignError } = await supabase
-          .from('campaigns')
-          .select(`
+    setLoading(true);
+    setError(null);
+    try {
+      // 1. Fetch campaigns with their tags - query otimizada
+      const { data: campaignsData, error: campaignError } = await supabase
+        .from('campaigns')
+        .select(`
+          id,
+          name,
+          status,
+          description,
+          start_date,
+          end_date,
+          tags!inner (
             id,
-            name,
-            status,
-            description,
-            start_date,
-            end_date,
-            tags (
-              id,
-              code,
-              type,
-              title
-            )
-          `)
-          .in('id', selectedCampaignIds);
+            code,
+            type,
+            title
+          )
+        `)
+        .in('id', selectedCampaignIds);
 
         if (campaignError) throw campaignError;
 
@@ -114,16 +112,20 @@ export const useReportEvents = ({ selectedCampaignIds, dateRange, groupBy, selec
           return;
         }
 
-        // 3. Fetch events for these tags within date range with tag information
+        // 3. Fetch events otimizado com índices
         const { data: eventsData, error: eventsError } = await supabase
           .from('events')
           .select(`
-            *,
+            event_type,
+            created_at,
+            tag_id,
             tags!inner(type)
           `)
           .in('tag_id', allTagIds)
           .gte('created_at', effectiveDateRange.from.toISOString())
-          .lte('created_at', effectiveDateRange.to.toISOString());
+          .lte('created_at', effectiveDateRange.to.toISOString())
+          .order('created_at', { ascending: false })
+          .limit(10000); // Limite para performance
 
         if (eventsError) throw eventsError;
 
@@ -228,13 +230,14 @@ export const useReportEvents = ({ selectedCampaignIds, dateRange, groupBy, selec
       } catch (err) {
         console.error('Error fetching report data:', err);
         setError(err instanceof Error ? err.message : 'An error occurred');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchReportData();
+    } finally {
+      setLoading(false);
+    }
   }, [selectedCampaignIds, effectiveDateRange, groupBy, selectedDimensions]);
+
+  useEffect(() => {
+    fetchReportData();
+  }, [fetchReportData]);
 
   return { data, loading, error };
 };

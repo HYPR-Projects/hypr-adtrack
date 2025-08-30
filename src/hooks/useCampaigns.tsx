@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -73,20 +73,30 @@ export const useCampaigns = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const fetchCampaigns = async () => {
+  // Memoizar consultas para evitar re-renders desnecessários
+  const memoizedCampaigns = useMemo(() => campaigns, [campaigns]);
+
+  const fetchCampaigns = useCallback(async () => {
     if (!user) return;
     
     try {
       setLoading(true);
       
-      // Fetch campaigns with tags first
+      // Fetch campaigns with tags using optimized query
       const { data: campaignsData, error: campaignsError } = await supabase
         .from('campaigns')
         .select(`
           *,
-          tags (*)
+          tags!inner (
+            id,
+            title,
+            code,
+            type,
+            created_at
+          )
         `)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(50); // Limite para performance inicial
 
       if (campaignsError) throw campaignsError;
 
@@ -117,7 +127,9 @@ export const useCampaigns = () => {
           };
 
           if (tagIds.length > 0) {
-            // Get events for this campaign's tags with tag information
+            // Usar view materializada se disponível, ou consulta otimizada
+            const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+            
             const { data: eventsData, error: eventsError } = await supabase
               .from('events')
               .select(`
@@ -126,7 +138,10 @@ export const useCampaigns = () => {
                 tag_id,
                 tags!inner(type)
               `)
-              .in('tag_id', tagIds);
+              .in('tag_id', tagIds)
+              .gte('created_at', sevenDaysAgo.toISOString())
+              .order('created_at', { ascending: false })
+              .limit(1000); // Limite para performance
 
             if (!eventsError && eventsData) {
               const now = new Date();
@@ -180,9 +195,9 @@ export const useCampaigns = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, toast]);
 
-  const createCampaign = async (campaignData: {
+  const createCampaign = useCallback(async (campaignData: {
     name: string;
     description: string;
     start_date?: string;
@@ -233,9 +248,9 @@ export const useCampaigns = () => {
       console.error('Error creating campaign:', error);
       return { data: null, error };
     }
-  };
+  }, [user, campaigns]);
 
-  const createTag = async (tagData: {
+  const createTag = useCallback(async (tagData: {
     campaign_id: string;
     type: 'click-button' | 'pin' | 'page-view';
     title: string;
@@ -273,7 +288,7 @@ export const useCampaigns = () => {
       console.error('Error creating tag:', error);
       return { data: null, error };
     }
-  };
+  }, [user, campaigns, fetchCampaigns]);
 
   useEffect(() => {
     if (user) {
@@ -281,7 +296,7 @@ export const useCampaigns = () => {
     }
   }, [user]);
 
-  const deleteTag = async (tagId: string) => {
+  const deleteTag = useCallback(async (tagId: string) => {
     if (!user) return { error: 'Not authenticated' };
 
     try {
@@ -299,10 +314,10 @@ export const useCampaigns = () => {
       console.error('Error deleting tag:', error);
       return { error };
     }
-  };
+  }, [user, fetchCampaigns]);
 
   return {
-    campaigns,
+    campaigns: memoizedCampaigns,
     loading,
     fetchCampaigns,
     createCampaign,

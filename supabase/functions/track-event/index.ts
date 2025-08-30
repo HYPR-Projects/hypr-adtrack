@@ -5,6 +5,78 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Cache para tags para melhorar performance
+const tagCache = new Map<string, { id: string; type: string; expires: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
+
+// Rate limiting simples por IP
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT = 1000; // requests por minuto por IP
+const RATE_WINDOW = 60 * 1000; // 1 minuto
+
+// Função para verificar rate limit
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  
+  const current = rateLimitMap.get(ip);
+  if (!current || now > current.resetTime) {
+    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_WINDOW });
+    return true;
+  }
+  
+  if (current.count >= RATE_LIMIT) {
+    return false;
+  }
+  
+  current.count++;
+  return true;
+}
+
+// Função para obter tag do cache ou banco
+async function getTagInfo(supabase: any, tagCode: string) {
+  // Verificar cache primeiro
+  const cached = tagCache.get(tagCode);
+  if (cached && Date.now() < cached.expires) {
+    return cached;
+  }
+  
+  // Buscar no banco
+  const { data: tag, error } = await supabase
+    .from('tags')
+    .select('id, type')
+    .eq('code', tagCode)
+    .single();
+    
+  if (error || !tag) {
+    return null;
+  }
+  
+  // Adicionar ao cache
+  const tagInfo = { id: tag.id, type: tag.type, expires: Date.now() + CACHE_TTL };
+  tagCache.set(tagCode, tagInfo);
+  
+  return tagInfo;
+}
+
+// Limpeza periódica do cache e rate limiting
+setInterval(() => {
+  const now = Date.now();
+  
+  // Limpar cache expirado
+  for (const [key, value] of tagCache.entries()) {
+    if (now > value.expires) {
+      tagCache.delete(key);
+    }
+  }
+  
+  // Limpar rate limiting expirado
+  for (const [key, value] of rateLimitMap.entries()) {
+    if (now > value.resetTime) {
+      rateLimitMap.delete(key);
+    }
+  }
+}, 60000); // Executar a cada minuto
+
 // 1x1 transparent GIF in base64
 const GIF_PIXEL = 'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
 
@@ -15,6 +87,19 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Rate limiting
+    const rawIp = req.headers.get('x-forwarded-for') || 
+                  req.headers.get('x-real-ip') || 
+                  'unknown';
+    const ip = rawIp === 'unknown' ? 'unknown' : rawIp.split(',')[0].trim();
+    
+    if (!checkRateLimit(ip)) {
+      return new Response('Rate limit exceeded', { 
+        status: 429, 
+        headers: corsHeaders 
+      });
+    }
+    
     const url = new URL(req.url)
     let tagCode = url.searchParams.get('tag')
     
@@ -43,31 +128,19 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Find the tag by code
-    const { data: tag, error: tagError } = await supabase
-      .from('tags')
-      .select('id, type')
-      .eq('code', tagCode)
-      .single()
-
-    if (tagError || !tag) {
-      console.log('Tag not found:', tagCode, tagError)
+    // Get tag info (com cache otimizado)
+    const tag = await getTagInfo(supabase, tagCode);
+    
+    if (!tag) {
+      console.log('Tag not found:', tagCode)
       return new Response('Tag not found', { 
         status: 404, 
         headers: corsHeaders 
       })
     }
 
-    // Get user agent and IP
+    // Get user agent (IP já foi processado acima)
     const userAgent = req.headers.get('user-agent')
-    
-    // Handle IP address - take only the first IP from comma-separated list
-    let rawIp = req.headers.get('x-forwarded-for') || 
-                req.headers.get('x-real-ip') || 
-                'unknown'
-    
-    // Extract first IP address from comma-separated list and trim whitespace
-    const ip = rawIp === 'unknown' ? 'unknown' : rawIp.split(',')[0].trim()
 
     // Get additional metadata based on request method
     let metadata = {}

@@ -84,12 +84,12 @@ export const useCampaigns = () => {
     try {
       setLoading(true);
       
-      // Fetch campaigns with tags using optimized query
+      // Fetch all campaigns (with or without tags)
       const { data: campaignsData, error: campaignsError } = await supabase
         .from('campaigns')
         .select(`
           *,
-          tags!inner (
+          tags (
             id,
             title,
             code,

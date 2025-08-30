@@ -27,16 +27,17 @@ import type { DateRange } from "react-day-picker";
 
 const CreateCampaignDialog = ({ 
   onCampaignCreated, 
-  insertionOrderId 
+  insertionOrderId,
+  createCampaign
 }: { 
   onCampaignCreated: () => void;
   insertionOrderId?: string;
+  createCampaign: (data: any) => Promise<any>;
 }) => {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
-  const { createCampaign } = useCampaigns();
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -126,7 +127,7 @@ const CreateCampaignDialog = ({
 };
 
 const Campaigns = () => {
-  const { campaigns, loading } = useCampaigns();
+  const { campaigns, loading, createCampaign } = useCampaigns();
   const { insertionOrders } = useInsertionOrders();
   const { insertionOrderId } = useParams();
   const { generateBreadcrumbs } = useBreadcrumbs();
@@ -297,7 +298,11 @@ const Campaigns = () => {
           
           {/* Actions Bar */}
           <div className="flex justify-end gap-3 mb-6">
-            <CreateCampaignDialog onCampaignCreated={handleCampaignCreated} insertionOrderId={insertionOrderId} />
+            <CreateCampaignDialog 
+              onCampaignCreated={handleCampaignCreated} 
+              insertionOrderId={insertionOrderId}
+              createCampaign={createCampaign}
+            />
           </div>
 
           {/* Header with IO context */}
@@ -480,7 +485,11 @@ const Campaigns = () => {
                       <>
                         <BarChart3 className="w-12 h-12 mx-auto mb-2 opacity-40" />
                         <p className="mb-4">Nenhuma campanha criada ainda</p>
-                        <CreateCampaignDialog onCampaignCreated={handleCampaignCreated} insertionOrderId={insertionOrderId} />
+                        <CreateCampaignDialog 
+                          onCampaignCreated={handleCampaignCreated} 
+                          insertionOrderId={insertionOrderId}
+                          createCampaign={createCampaign}
+                        />
                       </>
                     )}
                   </div>

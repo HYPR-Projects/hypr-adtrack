@@ -11,6 +11,20 @@ import { useInsertionOrders } from "@/hooks/useInsertionOrders";
 import { useCampaignGroups } from "@/hooks/useCampaignGroups";
 import { supabase } from "@/integrations/supabase/client";
 
+// Common IAB standard formats
+const IAB_FORMATS = [
+  { value: '300x250', label: '300x250 - Medium Rectangle' },
+  { value: '300x600', label: '300x600 - Half Page' },
+  { value: '970x250', label: '970x250 - Billboard' },
+  { value: '728x90', label: '728x90 - Leaderboard' },
+  { value: '320x50', label: '320x50 - Mobile Banner' },
+  { value: '160x600', label: '160x600 - Wide Skyscraper' },
+  { value: '970x90', label: '970x90 - Super Leaderboard' },
+  { value: '300x50', label: '300x50 - Mobile Banner Large' },
+  { value: '320x100', label: '320x100 - Large Mobile Banner' },
+  { value: '336x280', label: '336x280 - Large Rectangle' }
+];
+
 interface EditCampaignDialogProps {
   campaign: CampaignWithTags | null;
   open: boolean;
@@ -22,6 +36,7 @@ export const EditCampaignDialog = ({ campaign, open, onOpenChange }: EditCampaig
   const [description, setDescription] = useState("");
   const [insertionOrderId, setInsertionOrderId] = useState("");
   const [campaignGroupId, setCampaignGroupId] = useState("");
+  const [creativeFormat, setCreativeFormat] = useState("300x250");
   const [loading, setLoading] = useState(false);
   const { insertionOrders } = useInsertionOrders();
   const { campaignGroups } = useCampaignGroups();
@@ -34,6 +49,7 @@ export const EditCampaignDialog = ({ campaign, open, onOpenChange }: EditCampaig
       setDescription(campaign.description || "");
       setInsertionOrderId(campaign.insertion_order_id || "none");
       setCampaignGroupId(campaign.campaign_group_id || "none");
+      setCreativeFormat(campaign.creative_format || "300x250");
     }
   }, [campaign, open]);
 
@@ -69,6 +85,7 @@ export const EditCampaignDialog = ({ campaign, open, onOpenChange }: EditCampaig
       description: description.trim() || null,
       insertion_order_id: insertionOrderId === "none" ? null : insertionOrderId,
       campaign_group_id: campaignGroupId === "none" ? null : campaignGroupId,
+      creative_format: creativeFormat,
       updated_at: new Date().toISOString()
     };
 
@@ -172,7 +189,25 @@ export const EditCampaignDialog = ({ campaign, open, onOpenChange }: EditCampaig
               A campanha agrupa criativos relacionados dentro de uma insertion order
             </p>
           </div>
-          
+
+          <div className="space-y-2">
+            <Label htmlFor="creativeFormat">Formato IAB *</Label>
+            <Select value={creativeFormat} onValueChange={setCreativeFormat} disabled={loading}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o formato IAB" />
+              </SelectTrigger>
+              <SelectContent className="bg-background border shadow-md">
+                {IAB_FORMATS.map((format) => (
+                  <SelectItem key={format.value} value={format.value}>
+                    {format.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              O formato define as dimensões do criativo publicitário
+            </p>
+          </div>
           <div className="flex gap-3 pt-4">
             <Button type="button" variant="outline" onClick={handleClose} className="flex-1" disabled={loading}>
               Cancelar

@@ -12,9 +12,10 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Breadcrumb, useBreadcrumbs } from "@/components/Breadcrumb";
-import { ArrowLeft, Copy, MousePointer, Eye, Calendar, TrendingUp, Download, Tag as TagIcon, Trash2, User, Radio, Activity } from "lucide-react";
+import { ArrowLeft, Copy, MousePointer, Eye, Calendar, TrendingUp, Download, Tag as TagIcon, Trash2, User, Radio, Activity, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import AddTagDialog from "@/components/AddTagDialog";
+import { EditCampaignDialog } from "@/components/EditCampaignDialog";
 import { useCampaigns, type Tag } from "@/hooks/useCampaigns";
 import { useInsertionOrders } from "@/hooks/useInsertionOrders";
 import { supabase } from "@/integrations/supabase/client";
@@ -94,6 +95,7 @@ const CampaignDetails = () => {
   const [eventCount, setEventCount] = useState(0);
   const [includePageViews, setIncludePageViews] = useState(false);
   const [pendingEvents, setPendingEvents] = useState<RealtimeEvent[]>([]);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const channelRef = useRef<any>(null);
   const batchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -562,10 +564,20 @@ const CampaignDetails = () => {
                 </div>
               </div>
             </div>
-            <Button onClick={exportToCSV} className="gap-2">
-              <Download className="w-4 h-4" />
-              Exportar CSV
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setEditDialogOpen(true)}
+                className="gap-2"
+              >
+                <Settings className="w-4 h-4" />
+                Editar Campanha
+              </Button>
+              <Button onClick={exportToCSV} className="gap-2">
+                <Download className="w-4 h-4" />
+                Exportar CSV
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -983,6 +995,13 @@ const CampaignDetails = () => {
         </Card>
         </div>
       </div>
+
+      {/* Edit Campaign Dialog */}
+      <EditCampaignDialog 
+        campaign={campaign}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+      />
     </div>
   );
 };

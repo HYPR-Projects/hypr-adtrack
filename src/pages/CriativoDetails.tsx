@@ -423,10 +423,10 @@ const CampaignDetails = () => {
         <div className="text-center">
           <h1 className="text-2xl font-semibold mb-2">Campanha não encontrada</h1>
           <p className="text-muted-foreground mb-4">A campanha que você procura não existe.</p>
-          <Link to="/campaigns">
+          <Link to="/criativos">
             <Button>
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Voltar para Campanhas
+              Voltar para Criativos
             </Button>
           </Link>
         </div>
@@ -534,7 +534,7 @@ const CampaignDetails = () => {
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-4">
-              <Link to="/campaigns">
+              <Link to="/criativos">
                 <Button variant="outline" size="sm" className="gap-2">
                   <ArrowLeft className="w-4 h-4" />
                   Voltar

@@ -31,7 +31,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
       {/* Sticky Header with glass effect */}
       <div className="sticky top-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-md border-b">
         <div className="container mx-auto px-3 md:px-4 py-3 md:py-4">
-          <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-start">
+          <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
             <div className="flex items-center gap-2 md:gap-4">
               {backButton && (
                 <Link to={backButton.href}>
@@ -40,8 +40,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                   </Button>
                 </Link>
               )}
-              <div className="flex-1 min-w-0">
-                <div className="mb-1">
+              <div className="flex-1 min-w-0 flex items-center">
+                <div className="mr-4">
                   <img 
                     src="/lovable-uploads/0fcddc38-83cc-4638-b362-1485d244ceb3.png" 
                     alt="HYPR TRACKING" 

@@ -95,7 +95,7 @@ const Auth = () => {
             <div className="lg:hidden w-12 h-12 bg-white/10 rounded-lg flex items-center justify-center mx-auto mb-4 border border-white/20">
               <Target className="w-6 h-6 text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-white">
+            <h2 className="text-2xl font-semibold text-white">
               HYPR Tracking
             </h2>
             <p className="text-sm text-white/80">

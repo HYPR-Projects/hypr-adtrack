@@ -48,11 +48,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                     className="h-5 md:h-7 object-contain"
                   />
                 </div>
-                {title && (
-                  <div>
-                    <h1 className="text-lg md:text-2xl font-semibold truncate">{title}</h1>
-                  </div>
-                )}
               </div>
             </div>
             <div className="flex gap-2 md:gap-3 shrink-0">

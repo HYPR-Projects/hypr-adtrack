@@ -277,11 +277,14 @@ const Reports = () => {
 
   return (
     <AppLayout 
-      title="Relatórios"
-      subtitle="Customize e exporte relatórios detalhados das suas campanhas"
       showReportsButton={false}
       backButton={{ href: "/criativos", label: "← Voltar" }}
     >
+        {/* Page Title */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold">Relatórios</h1>
+          <p className="text-muted-foreground">Customize e exporte relatórios detalhados das suas campanhas</p>
+        </div>
         {/* Actions Bar */}
         <div className="flex justify-end gap-3 mb-6">
           <Button 

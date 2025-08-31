@@ -359,7 +359,7 @@ const CampaignDetails = () => {
     });
   };
 
-  const getPixelUrl = (tag: string, dspType: 'dv360' | 'xandr' | 'js') => {
+  const getPixelUrl = (tag: string, dspType: 'dv360' | 'xandr' | 'js' | 'universal') => {
     const baseUrl = `https://wmwpzmpgaokjplhyyktv.supabase.co/functions/v1/track-event?tag=${tag}`;
     
     switch (dspType) {
@@ -369,12 +369,14 @@ const CampaignDetails = () => {
         return `${baseUrl}&cb=\${CACHEBUSTER}`;
       case 'js':
         return `${baseUrl}&cb=` + '${Date.now()}';
+      case 'universal':
+        return `${baseUrl}&cb=%%CACHEBUSTER%%-%%RANDOM%%-\${CACHEBUSTER}-\${CB}-[timestamp]`;
       default:
         return `${baseUrl}&cb=%%CACHEBUSTER%%`;
     }
   };
 
-  const getImgTag = (tag: string, dspType: 'dv360' | 'xandr') => {
+  const getImgTag = (tag: string, dspType: 'dv360' | 'xandr' | 'universal') => {
     const pixelUrl = getPixelUrl(tag, dspType);
     return `<img src="${pixelUrl}" width="1" height="1" style="display:none" />`;
   };
@@ -681,7 +683,29 @@ const CampaignDetails = () => {
                       </div>
                     </div>
                     <div className="space-y-3">
-                      <div className="text-sm font-medium text-foreground mb-2">DSP Tracking (Recomendado):</div>
+                      <div className="text-sm font-medium text-foreground mb-2">Universal DSP Tracking (Recomendado):</div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => copyToClipboard(getPixelUrl(tag.code, 'universal'), `Universal URL (${tag.title})`)}
+                          className="justify-start text-xs h-8"
+                        >
+                          <Copy className="w-3 h-3 mr-2" />
+                          Universal URL
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => copyToClipboard(getImgTag(tag.code, 'universal'), `Universal IMG (${tag.title})`)}
+                          className="justify-start text-xs h-8"
+                        >
+                          <Copy className="w-3 h-3 mr-2" />
+                          Universal IMG Tag
+                        </Button>
+                      </div>
+                      <Separator className="my-3" />
+                      <div className="text-sm font-medium text-foreground mb-2">DSP Específica:</div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <Button
                           variant="outline"
@@ -732,10 +756,15 @@ const CampaignDetails = () => {
                         Copiar JS Snippet (Para iframes)
                       </Button>
                       <div className="text-xs text-muted-foreground mt-2 p-3 bg-muted/30 rounded-lg">
-                        <div className="font-medium mb-1">💡 Dicas de uso:</div>
-                        <div>• DV360: Use %%CACHEBUSTER%% para cache-busting único</div>
-                        <div>• Xandr: Use $&#123;CACHEBUSTER&#125; para evitar duplicatas</div>
-                        <div>• JS: Para iframes/mapas que precisam de controle total</div>
+                        <div className="font-medium mb-1">💡 Melhores Práticas:</div>
+                        <div>• <strong>Universal</strong>: Funciona em múltiplas DSPs (DV360, Xandr, etc)</div>
+                        <div>• <strong>DV360</strong>: %%CACHEBUSTER%% para cache único por impressão</div>
+                        <div>• <strong>Xandr</strong>: $&#123;CACHEBUSTER&#125; para identificação única</div>
+                        <div>• <strong>JS</strong>: Para iframes/mapas com controle total do cache</div>
+                        <div className="mt-2 pt-2 border-t border-muted-foreground/20">
+                          <div className="font-medium">🎯 Recomendação:</div>
+                          <div>Use a tag <strong>Universal</strong> nas DSPs para máxima compatibilidade</div>
+                        </div>
                       </div>
                     </div>
                   </div>

@@ -232,6 +232,19 @@ Deno.serve(async (req) => {
 
     if (insertError) {
       console.error('Error inserting event:', insertError)
+      // For GET requests, still return 1x1 GIF to prevent ad server errors
+      if (req.method === 'GET') {
+        const gifBuffer = Uint8Array.from(atob(GIF_PIXEL), c => c.charCodeAt(0))
+        return new Response(gifBuffer, {
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'image/gif',
+            'Content-Length': gifBuffer.length.toString(),
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'X-Debug': 'insert-error'
+          }
+        })
+      }
       return new Response('Error recording event', { 
         status: 500, 
         headers: corsHeaders 
@@ -279,6 +292,19 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Unexpected error:', error)
+    // For GET requests, return 1x1 GIF even on unexpected errors to prevent ad server issues
+    if (req.method === 'GET') {
+      const gifBuffer = Uint8Array.from(atob(GIF_PIXEL), c => c.charCodeAt(0))
+      return new Response(gifBuffer, {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'image/gif',
+          'Content-Length': gifBuffer.length.toString(),
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'X-Debug': 'unexpected-error'
+        }
+      })
+    }
     return new Response('Internal server error', { 
       status: 500, 
       headers: corsHeaders 

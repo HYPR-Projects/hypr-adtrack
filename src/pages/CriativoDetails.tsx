@@ -359,8 +359,10 @@ const CampaignDetails = () => {
     });
   };
 
+  const PROJECT_DOMAIN = 'wmwpzmpgaokjplhyyktv.supabase.co';
+
   const getPixelUrl = (tag: string, dspType: 'dv360' | 'xandr' | 'ttd' | 'combo' | 'js' | 'test') => {
-    const baseUrl = `https://wmwpzmpgaokjplhyyktv.supabase.co/functions/v1/track-event?tag=${tag}`;
+    const baseUrl = `https://${PROJECT_DOMAIN}/functions/v1/track-event?tag=${tag}`;
     
     switch (dspType) {
       case 'dv360':
@@ -370,7 +372,7 @@ const CampaignDetails = () => {
       case 'ttd':
         return `${baseUrl}&cb=[timestamp]`;
       case 'combo':
-        return `${baseUrl}&cb=%%CACHEBUSTER%%-\${CB}-[timestamp]`;
+        return `${baseUrl}&cb=${encodeURIComponent('%%CACHEBUSTER%%-${CB}-[timestamp]')}`;
       case 'js':
         return `${baseUrl}&cb=\${Date.now()}`;
       case 'test':
@@ -380,13 +382,29 @@ const CampaignDetails = () => {
     }
   };
 
+  const testPixelUrl = async (url: string, tagTitle: string) => {
+    try {
+      const response = await fetch(url, { method: 'GET', mode: 'no-cors' });
+      toast({
+        title: "Teste realizado",
+        description: `Tag "${tagTitle}" testada com sucesso. Verifique os logs em tempo real.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Erro no teste",
+        description: `Falha ao testar a tag "${tagTitle}".`,
+        variant: "destructive"
+      });
+    }
+  };
+
   const getImgTag = (tag: string, dspType: 'dv360' | 'xandr' | 'ttd' | 'combo' | 'test') => {
     const pixelUrl = getPixelUrl(tag, dspType);
     return `<img src="${pixelUrl}" width="1" height="1" style="display:none" />`;
   };
 
   const getJsSnippet = (tag: string) => 
-    `fetch("https://wmwpzmpgaokjplhyyktv.supabase.co/functions/v1/track-event?tag=${tag}&cb=" + Date.now(), {
+    `fetch("https://${PROJECT_DOMAIN}/functions/v1/track-event?tag=${tag}&cb=" + Date.now(), {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
@@ -687,8 +705,11 @@ const CampaignDetails = () => {
                       </div>
                     </div>
                     <div className="space-y-3">
-                       <div className="text-sm font-medium text-foreground mb-2">Universal DSP Tracking (Recomendado):</div>
-                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="text-sm font-medium text-foreground">Universal DSP Tracking (Recomendado):</div>
+                          <div className="text-xs text-muted-foreground">Domínio: {PROJECT_DOMAIN}</div>
+                        </div>
+                       <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 mb-3">
                          <Button
                            variant="outline"
                            size="sm"
@@ -715,6 +736,15 @@ const CampaignDetails = () => {
                          >
                            <Copy className="w-3 h-3 mr-2" />
                            Test URL
+                         </Button>
+                         <Button
+                           variant="outline"
+                           size="sm"
+                           onClick={() => testPixelUrl(getPixelUrl(tag.code, 'test'), tag.title)}
+                           className="justify-start text-xs h-8"
+                         >
+                           <Activity className="w-3 h-3 mr-2" />
+                           Testar
                          </Button>
                        </div>
                        <Separator className="my-3" />

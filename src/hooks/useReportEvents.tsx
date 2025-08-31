@@ -118,17 +118,26 @@ export const useReportEvents = ({ selectedCampaignIds, dateRange, groupBy, selec
           status,
           description,
           creative_format,
+          campaign_group_id,
           insertion_orders (
             client_name
-          ),
-          campaign_groups (
-            name
           )
         `)
         .in('id', campaignIds);
       
+      // Fetch campaign groups separately to avoid relationship ambiguity
+      const campaignGroupIds = [...new Set(campaigns?.map(c => c.campaign_group_id).filter(Boolean))];
+      const { data: campaignGroups, error: campaignGroupsError } = await supabase
+        .from('campaign_groups')
+        .select('id, name')
+        .in('id', campaignGroupIds);
+      
       if (campaignsError) {
         throw new Error(`Erro ao buscar campanhas: ${campaignsError.message}`);
+      }
+      
+      if (campaignGroupsError) {
+        throw new Error(`Erro ao buscar grupos de campanha: ${campaignGroupsError.message}`);
       }
       
       // Filter out rows without valid period_start or without any events
@@ -148,6 +157,7 @@ export const useReportEvents = ({ selectedCampaignIds, dateRange, groupBy, selec
       // Transform the data to match our ReportEvent interface
       const result: ReportEvent[] = validData.map(row => {
         const campaign = campaigns?.find(c => c.id === row.campaign_id);
+        const campaignGroup = campaignGroups?.find(cg => cg.id === campaign?.campaign_group_id);
         const totalClicks = Number(row.cta_clicks) + Number(row.pin_clicks);
         const pageViews = Number(row.page_views);
         const ctr = pageViews > 0 ? (totalClicks / pageViews) * 100 : 0;
@@ -180,7 +190,7 @@ export const useReportEvents = ({ selectedCampaignIds, dateRange, groupBy, selec
           period: periodFormat,
           campaignId: row.campaign_id,
           campaignName: campaign?.name || 'Unknown', // This is now the creative name
-          campaignGroupName: (campaign as any)?.campaign_groups?.name || 'Sem Grupo de Campanha',
+          campaignGroupName: campaignGroup?.name || 'Sem Grupo de Campanha',
           creativeName: campaign?.name || 'Unknown',
           campaignStatus: campaign?.status || 'active',
           campaignDescription: campaign?.description || '',

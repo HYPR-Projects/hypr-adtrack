@@ -41,6 +41,16 @@ const availableDimensions = [
   { id: 'creative_format', label: 'Formato do Criativo' },
 ];
 
+// Available creative formats
+const availableCreativeFormats = [
+  { id: 'banner', label: 'Banner' },
+  { id: 'video', label: 'Vídeo' },
+  { id: 'carousel', label: 'Carrossel' },
+  { id: 'story', label: 'Stories' },
+  { id: 'feed', label: 'Feed' },
+  { id: 'interstitial', label: 'Intersticial' },
+];
+
 interface Campaign {
   id: string;
   name: string;
@@ -60,6 +70,7 @@ interface Campaign {
 interface ReportConfig {
   selectedCampaigns: string[];
   selectedInsertionOrders: string[];
+  selectedCreativeFormats: string[];
   dimensions: string[];
   metrics: string[];
   dateRange?: DateRange;
@@ -74,6 +85,7 @@ const Reports = () => {
   const [reportConfig, setReportConfig] = useState<ReportConfig>({
     selectedCampaigns: [],
     selectedInsertionOrders: [],
+    selectedCreativeFormats: [],
     dimensions: ['campaign_name'],
     metrics: ['page_views', 'cta_clicks', 'pin_clicks', 'ctr'],
     groupBy: 'day'
@@ -175,6 +187,15 @@ const Reports = () => {
       selectedInsertionOrders: checked 
         ? [...prev.selectedInsertionOrders, ioId]
         : prev.selectedInsertionOrders.filter(id => id !== ioId)
+    }));
+  };
+
+  const handleCreativeFormatToggle = (formatId: string, checked: boolean) => {
+    setReportConfig(prev => ({
+      ...prev,
+      selectedCreativeFormats: checked 
+        ? [...prev.selectedCreativeFormats, formatId]
+        : prev.selectedCreativeFormats.filter(id => id !== formatId)
     }));
   };
 
@@ -450,6 +471,63 @@ const Reports = () => {
                           <X 
                             className="ml-1 h-3 w-3 cursor-pointer" 
                             onClick={() => handleCampaignToggle(campaignId, false)}
+                          />
+                        </Badge>
+                      ) : null;
+                     })}
+                  </div>
+                )}
+              </div>
+
+              {/* Creative Formats Multi-Select */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Formatos Criativos</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-between text-left font-normal"
+                    >
+                      <span className="truncate">
+                        {reportConfig.selectedCreativeFormats.length === 0
+                          ? "Selecione Formatos"
+                          : `${reportConfig.selectedCreativeFormats.length} selecionado(s)`}
+                      </span>
+                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <div className="p-3 space-y-2 max-h-60 overflow-y-auto">
+                      {availableCreativeFormats.map((format) => (
+                        <div key={format.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`format-${format.id}`}
+                            checked={reportConfig.selectedCreativeFormats.includes(format.id)}
+                            onCheckedChange={(checked) => 
+                              handleCreativeFormatToggle(format.id, !!checked)
+                            }
+                          />
+                          <Label 
+                            htmlFor={`format-${format.id}`} 
+                            className="text-sm cursor-pointer flex-1"
+                          >
+                            {format.label}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                {reportConfig.selectedCreativeFormats.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {reportConfig.selectedCreativeFormats.map(formatId => {
+                      const format = availableCreativeFormats.find(f => f.id === formatId);
+                      return format ? (
+                        <Badge key={formatId} variant="secondary" className="text-xs">
+                          {format.label}
+                          <X 
+                            className="ml-1 h-3 w-3 cursor-pointer" 
+                            onClick={() => handleCreativeFormatToggle(formatId, false)}
                           />
                         </Badge>
                       ) : null;

@@ -222,20 +222,13 @@ const CampaignDetails = () => {
     if (tagIds.length === 0) return;
 
     try {
-      // Build the query with event type filtering
-      let query = supabase
+      // Always load the last 50 events for this campaign
+      const { data: events, error } = await supabase
         .from('events')
         .select('id, tag_id, event_type, ip_address, user_agent, metadata, created_at')
         .in('tag_id', tagIds)
         .order('created_at', { ascending: false })
         .limit(50);
-
-      // Apply event type filter
-      if (!includePageViews) {
-        query = query.in('event_type', ['click', 'pin_click', 'cta_click', 'click_button']);
-      }
-
-      const { data: events, error } = await query;
 
       if (error) throw error;
       setRealtimeLogs((events || []) as RealtimeEvent[]);
@@ -285,6 +278,43 @@ const CampaignDetails = () => {
     loadInitialLogs();
   }, [campaign]);
 
+  // Setup real-time listening for new events
+  useEffect(() => {
+    if (!campaign) return;
+    
+    const tagIds = campaign.tags.map(tag => tag.id);
+    if (tagIds.length === 0) return;
+
+    const channel = supabase
+      .channel('realtime-events')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'events',
+          filter: `tag_id=in.(${tagIds.join(',')})`
+        },
+        (payload) => {
+          console.log('New event received:', payload);
+          const newEvent = payload.new as RealtimeEvent;
+          
+          // Add new event to the beginning and keep only last 50
+          setRealtimeLogs(prev => {
+            const updated = [newEvent, ...prev];
+            return updated.slice(0, 50);
+          });
+          
+          setEventCount(prev => Math.min(prev + 1, 50));
+          setLastUpdatedAt(new Date().toLocaleTimeString('pt-BR', { hour12: false }));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [campaign]);
 
   useEffect(() => {
     loadInitialLogs();

@@ -135,60 +135,42 @@ const CampaignDetails = () => {
         if (recentError) throw recentError;
         setIsActive(recentEvents && recentEvents.length > 0);
 
-        // Fetch metrics for last 7 days with tag information
+        // Calculate date range for last 7 days
+        const today = new Date();
         const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        sevenDaysAgo.setDate(today.getDate() - 7);
+        
+        const startDate = sevenDaysAgo.toISOString().split('T')[0];
+        const endDate = today.toISOString().split('T')[0];
 
-        const { data: events, error } = await supabase
-          .from('events')
-          .select(`
-            event_type, 
-            created_at,
-            tag_id,
-            tags!inner(type)
-          `)
-          .in('tag_id', tagIds)
-          .gte('created_at', sevenDaysAgo.toISOString())
-          .order('created_at', { ascending: false });
+        // Use get_report_aggregated RPC to fetch daily metrics
+        const { data: reportData, error } = await supabase
+          .rpc('get_report_aggregated', {
+            p_campaign_ids: [campaign.id],
+            p_start_date: startDate,
+            p_end_date: endDate,
+            p_group_by: 'day',
+            p_breakdown_by_tags: false
+          });
 
         if (error) throw error;
 
-        const groupedByDate = (events || []).reduce((acc, event) => {
-          // Parse the date using local timezone instead of UTC
-          const eventDate = new Date(event.created_at);
-          const localDateString = eventDate.toLocaleDateString('pt-BR');
-          // Convert back to YYYY-MM-DD format for consistency
-          const [day, month, year] = localDateString.split('/');
-          const date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-          
-          if (!acc[date]) {
-            acc[date] = { cta_clicks: 0, pin_clicks: 0, page_views: 0 };
-          }
+        // Transform the data to match DailyMetric interface
+        const metricsArray = (reportData || []).map((row: any) => {
+          // Convert period_start to local date
+          const periodDate = new Date(row.period_start);
+          const year = periodDate.getFullYear();
+          const month = String(periodDate.getMonth() + 1).padStart(2, '0');
+          const day = String(periodDate.getDate()).padStart(2, '0');
+          const dateString = `${year}-${month}-${day}`;
 
-          const tagType = (event as any).tags?.type;
-          const classifiedEventType = classifyEventByTagType(event, tagType);
-
-          switch (classifiedEventType) {
-            case 'click':
-              acc[date].cta_clicks++;
-              break;
-            case 'pin_click':
-              acc[date].pin_clicks++;
-              break;
-            case 'page_view':
-              acc[date].page_views++;
-              break;
-          }
-
-          return acc;
-        }, {} as Record<string, { cta_clicks: number; pin_clicks: number; page_views: number }>);
-
-        const metricsArray = Object.entries(groupedByDate)
-          .map(([date, metrics]) => ({
-            date,
-            ...metrics
-          }))
-          .sort((a, b) => b.date.localeCompare(a.date));
+          return {
+            date: dateString,
+            cta_clicks: Number(row.cta_clicks) || 0,
+            pin_clicks: Number(row.pin_clicks) || 0,
+            page_views: Number(row.page_views) || 0
+          };
+        }).sort((a, b) => b.date.localeCompare(a.date));
 
         setDailyMetrics(metricsArray);
       } catch (error) {

@@ -223,7 +223,7 @@ const Criativos = () => {
   const deferredSearchTerm = useDeferredValue(searchTerm);
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [creatorFilter, setCreatorFilter] = useState<string>("all");
-  const [creationMonthFilter, setCreationMonthFilter] = useState<string>("all");
+  const [campaignFilter, setCampaignFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [insertionOrderFilter, setInsertionOrderFilter] = useState<string>("all");
   
@@ -252,6 +252,16 @@ const Criativos = () => {
     }).filter(Boolean) as { id: string; name: string }[];
   }, [campaigns, insertionOrders]);
 
+  // Get unique campaigns for filter
+  const uniqueCampaigns = useMemo(() => {
+    if (campaignGroupId) return [];
+    const campaigns = relevantCampaigns
+      .filter(c => c.campaign_group)
+      .map(c => ({ id: c.campaign_group_id!, name: c.campaign_group!.name }))
+      .filter((cg, index, arr) => arr.findIndex(item => item.id === cg.id) === index);
+    return campaigns.sort((a, b) => a.name.localeCompare(b.name));
+  }, [relevantCampaigns, campaignGroupId]);
+
   // Get unique creators and months for filter options
   const uniqueCreators = useMemo(() => {
     const creators = relevantCampaigns
@@ -261,15 +271,6 @@ const Criativos = () => {
     return creators.sort();
   }, [relevantCampaigns]);
 
-  const uniqueMonths = useMemo(() => {
-    const months = relevantCampaigns
-      .map(c => {
-        const date = new Date(c.created_at);
-        return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
-      })
-      .filter((month, index, arr) => arr.indexOf(month) === index);
-    return months.sort().reverse();
-  }, [relevantCampaigns]);
 
   // Filtered campaigns based on all filters
   const filteredCampaigns = useMemo(() => {
@@ -292,11 +293,10 @@ const Criativos = () => {
         creatorFilter === "all" || 
         campaign.profile?.email === creatorFilter;
       
-      // Creation month filter
-      const campaignMonth = `${campaignDate.getFullYear()}-${(campaignDate.getMonth() + 1).toString().padStart(2, '0')}`;
-      const matchesCreationMonth = 
-        creationMonthFilter === "all" || 
-        campaignMonth === creationMonthFilter;
+      // Campaign group filter
+      const matchesCampaignGroup = 
+        campaignFilter === "all" || 
+        campaign.campaign_group_id === campaignFilter;
       
       // Status filter
       const matchesStatus = 
@@ -309,9 +309,9 @@ const Criativos = () => {
         insertionOrderFilter === "all" || 
         campaign.insertion_order_id === insertionOrderFilter;
       
-      return matchesSearch && matchesDateRange && matchesCreator && matchesCreationMonth && matchesStatus && matchesInsertionOrder;
+      return matchesSearch && matchesDateRange && matchesCreator && matchesCampaignGroup && matchesStatus && matchesInsertionOrder;
     });
-  }, [campaigns, relevantCampaigns, deferredSearchTerm, dateRange, creatorFilter, creationMonthFilter, statusFilter, insertionOrderFilter, insertionOrderId]);
+  }, [campaigns, relevantCampaigns, deferredSearchTerm, dateRange, creatorFilter, campaignFilter, statusFilter, insertionOrderFilter, insertionOrderId]);
   
   const totalCampaigns = filteredCampaigns.length;
   const activeCampaigns = filteredCampaigns.filter(c => c.derivedStatus === 'active').length;
@@ -324,7 +324,7 @@ const Criativos = () => {
     setSearchTerm("");
     setDateRange(undefined);
     setCreatorFilter("all");
-    setCreationMonthFilter("all");
+    setCampaignFilter("all");
     setStatusFilter("all");
     setInsertionOrderFilter("all");
   };
@@ -551,27 +551,22 @@ const Criativos = () => {
                 </SelectContent>
               </Select>
 
-              <Select value={creationMonthFilter} onValueChange={setCreationMonthFilter}>
-                <SelectTrigger className="w-full">
-                  <CalendarIcon className="w-4 h-4 mr-2 shrink-0" />
-                  <SelectValue placeholder="Mês/Ano" />
-                </SelectTrigger>
-                <SelectContent className="bg-background border shadow-md z-50">
-                  <SelectItem value="all">Todos os períodos</SelectItem>
-                  {uniqueMonths.map((month) => {
-                    const [year, monthNum] = month.split('-');
-                    const monthName = new Date(parseInt(year), parseInt(monthNum) - 1).toLocaleDateString('pt-BR', { 
-                      month: 'long', 
-                      year: 'numeric' 
-                    });
-                    return (
-                      <SelectItem key={month} value={month}>
-                        <span className="truncate">{monthName.charAt(0).toUpperCase() + monthName.slice(1)}</span>
+              {!campaignGroupId && (
+                <Select value={campaignFilter} onValueChange={setCampaignFilter}>
+                  <SelectTrigger className="w-full">
+                    <Users className="w-4 h-4 mr-2 shrink-0" />
+                    <SelectValue placeholder="Campanha" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border shadow-md z-50">
+                    <SelectItem value="all">Todas as campanhas</SelectItem>
+                    {uniqueCampaigns.map((campaign) => (
+                      <SelectItem key={campaign.id} value={campaign.id}>
+                        <span className="truncate">{campaign.name}</span>
                       </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
 
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-full">
@@ -587,7 +582,7 @@ const Criativos = () => {
             </div>
             
             {/* Results and clear filters */}
-            {(searchTerm || dateRange?.from || dateRange?.to || creatorFilter !== "all" || creationMonthFilter !== "all" || statusFilter !== "all" || insertionOrderFilter !== "all") && (
+            {(searchTerm || dateRange?.from || dateRange?.to || creatorFilter !== "all" || campaignFilter !== "all" || statusFilter !== "all" || insertionOrderFilter !== "all") && (
               <div className="flex items-center gap-2">
                 <Badge variant="secondary" className="text-xs">
                   {filteredCampaigns.length} resultado{filteredCampaigns.length !== 1 ? 's' : ''}
@@ -634,7 +629,7 @@ const Criativos = () => {
           <Card>
             <CardContent className="p-8 md:p-12 text-center">
               <div className="text-muted-foreground">
-                {searchTerm || dateRange?.from || dateRange?.to || creatorFilter !== "all" || creationMonthFilter !== "all" || statusFilter !== "all" ? (
+                {searchTerm || dateRange?.from || dateRange?.to || creatorFilter !== "all" || campaignFilter !== "all" || statusFilter !== "all" ? (
                   <>
                     <Filter className="w-10 h-10 md:w-12 md:h-12 mx-auto mb-4 opacity-40" />
                     <p className="mb-4 text-sm md:text-base">Nenhum criativo encontrado com os filtros aplicados</p>

@@ -35,6 +35,7 @@ const availableMetrics = [
 
 const availableDimensions = [
   { id: 'campaign_name', label: 'Nome da Campanha' },
+  { id: 'creative_name', label: 'Nome do Criativo' },
   { id: 'insertion_order_name', label: 'Nome da Insertion Order' },
   { id: 'campaign_description', label: 'Descrição' },
   { id: 'campaign_tags', label: 'Tags' },
@@ -153,7 +154,10 @@ const Reports = () => {
       reportConfig.dimensions.forEach(dim => {
         switch (dim) {
           case 'campaign_name':
-            row['Nome da Campanha'] = event.campaignName;
+            row['Nome da Campanha'] = event.campaignGroupName;
+            break;
+          case 'creative_name':
+            row['Nome do Criativo'] = event.creativeName;
             break;
           case 'insertion_order_name':
             row['Nome da Insertion Order'] = event.insertionOrderName;

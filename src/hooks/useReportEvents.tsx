@@ -8,6 +8,8 @@ export interface ReportEvent {
   period: string;
   campaignId: string;
   campaignName: string;
+  campaignGroupName: string;
+  creativeName: string;
   campaignStatus: string;
   campaignDescription: string;
   campaignTags: string;
@@ -118,6 +120,9 @@ export const useReportEvents = ({ selectedCampaignIds, dateRange, groupBy, selec
           creative_format,
           insertion_orders (
             client_name
+          ),
+          campaign_groups (
+            name
           )
         `)
         .in('id', campaignIds);
@@ -174,7 +179,9 @@ export const useReportEvents = ({ selectedCampaignIds, dateRange, groupBy, selec
         return {
           period: periodFormat,
           campaignId: row.campaign_id,
-          campaignName: campaign?.name || 'Unknown',
+          campaignName: campaign?.name || 'Unknown', // This is now the creative name
+          campaignGroupName: (campaign as any)?.campaign_groups?.name || 'Sem Grupo de Campanha',
+          creativeName: campaign?.name || 'Unknown',
           campaignStatus: campaign?.status || 'active',
           campaignDescription: campaign?.description || '',
           campaignTags: needsTagBreakdown && row.tag_title ? row.tag_title : '',
@@ -202,7 +209,10 @@ export const useReportEvents = ({ selectedCampaignIds, dateRange, groupBy, selec
           const timestampCompare = new Date(rowB.period_start).getTime() - new Date(rowA.period_start).getTime();
           if (timestampCompare !== 0) return timestampCompare;
         }
-        return a.campaignName.localeCompare(b.campaignName);
+        // Sort by campaign group name, then by creative name
+        const campaignGroupCompare = a.campaignGroupName.localeCompare(b.campaignGroupName);
+        if (campaignGroupCompare !== 0) return campaignGroupCompare;
+        return a.creativeName.localeCompare(b.creativeName);
       });
       
       setData(result);

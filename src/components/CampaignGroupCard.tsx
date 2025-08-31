@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,9 +19,28 @@ const calculateCTR = (clicks: number, pageViews: number) => {
 
 export const CampaignGroupCard = memo(({ campaignGroup }: CampaignGroupCardProps) => {
   const ctr = calculateCTR(campaignGroup.total_clicks || 0, campaignGroup.total_page_views || 0);
+  const navigate = useNavigate();
+
+  const handleCardClick = () => {
+    navigate(`/campanhas/${campaignGroup.id}/criativos`);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleCardClick();
+    }
+  };
   
   return (
-    <Card className="border shadow-sm hover:shadow-md transition-shadow h-full">
+    <Card 
+      className="border shadow-sm hover:shadow-lg transition-all duration-200 h-full cursor-pointer focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      onClick={handleCardClick}
+      onKeyDown={handleKeyDown}
+      role="button"
+      tabIndex={0}
+      aria-label={`Ver criativos da campanha ${campaignGroup.name}`}
+    >
       <CardHeader className="pb-3 px-4 md:px-6 py-4 md:py-6">
         <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-3 lg:gap-4">
           <div className="flex-1 min-w-0">
@@ -58,7 +77,12 @@ export const CampaignGroupCard = memo(({ campaignGroup }: CampaignGroupCardProps
             {/* Menu de ações */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8 w-8 p-0"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -106,18 +130,7 @@ export const CampaignGroupCard = memo(({ campaignGroup }: CampaignGroupCardProps
 
           <Separator />
 
-          {/* Ações */}
-          <div className="flex gap-2">
-            <Link 
-              to={`/campanhas/${campaignGroup.id}/criativos`} 
-              className="flex-1"
-            >
-              <Button className="w-full gap-2 text-xs md:text-sm">
-                <BarChart3 className="w-4 h-4" />
-                <span className="break-words">Ver Criativos ({campaignGroup.campaigns_count || 0})</span>
-              </Button>
-            </Link>
-          </div>
+          {/* Ações removidas - card é totalmente clicável */}
         </div>
       </CardContent>
     </Card>

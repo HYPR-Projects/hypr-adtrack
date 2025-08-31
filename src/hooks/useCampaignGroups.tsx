@@ -72,56 +72,70 @@ export const useCampaignGroups = () => {
 
       if (error) throw error;
 
+      // Collect all campaign IDs for batch metrics fetch
+      const allCampaignIds = (groups || []).flatMap(group => 
+        (group.campaigns || []).map((campaign: any) => campaign.id)
+      );
+
+      // Fetch metrics for all campaigns in one call
+      let campaignMetrics: Record<string, { page_views: number; cta_clicks: number; pin_clicks: number; last_hour: number }> = {};
+      
+      if (allCampaignIds.length > 0) {
+        const { data: metricsData, error: metricsError } = await supabase
+          .rpc('get_campaign_counters', { campaign_ids: allCampaignIds });
+
+        if (!metricsError && metricsData) {
+          campaignMetrics = metricsData.reduce((acc: any, item: any) => {
+            acc[item.campaign_id] = {
+              page_views: item.page_views || 0,
+              cta_clicks: item.cta_clicks || 0,
+              pin_clicks: item.pin_clicks || 0,
+              last_hour: item.last_hour || 0
+            };
+            return acc;
+          }, {});
+        }
+      }
+
       // Process the data to include aggregated metrics and derived status
-      const processedGroups: CampaignGroup[] = await Promise.all(
-        (groups || []).map(async (group) => {
-          const campaigns = group.campaigns || [];
-          const campaignsCount = campaigns.length;
-          
-          // Collect all tag IDs from campaigns in this group
-          const allTagIds: string[] = [];
-          campaigns.forEach((campaign: any) => {
-            if (campaign.tags) {
-              campaign.tags.forEach((tag: any) => {
-                allTagIds.push(tag.id);
-              });
-            }
-          });
+      const processedGroups: CampaignGroup[] = (groups || []).map((group) => {
+        const campaigns = group.campaigns || [];
+        const campaignsCount = campaigns.length;
+        
+        // Calculate totals for this group
+        let totalPageViews = 0;
+        let totalClicks = 0;
+        let hasRecentActivity = false;
 
-          let hasRecentActivity = false;
-
-          // Check for activity in last 24 hours if there are tags
-          if (allTagIds.length > 0) {
-            const twentyFourHoursAgo = new Date();
-            twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
-
-            const { data: recentEvents, error: recentError } = await supabase
-              .from('events')
-              .select('id')
-              .in('tag_id', allTagIds)
-              .gte('created_at', twentyFourHoursAgo.toISOString())
-              .limit(1);
-
-            if (!recentError) {
-              hasRecentActivity = (recentEvents?.length || 0) > 0;
+        campaigns.forEach((campaign: any) => {
+          const metrics = campaignMetrics[campaign.id];
+          if (metrics) {
+            totalPageViews += metrics.page_views;
+            totalClicks += metrics.cta_clicks + metrics.pin_clicks;
+            if (metrics.last_hour > 0) {
+              hasRecentActivity = true;
             }
           }
-          
-          // For now, set metrics to 0 - we can add this back later
-          const totalClicks = 0;
-          const totalPageViews = 0;
+        });
 
-          return {
-            ...group,
-            status: group.status as 'active' | 'paused',
-            insertion_order: group.insertion_orders,
-            campaigns_count: campaignsCount,
-            total_clicks: totalClicks,
-            total_page_views: totalPageViews,
-            derivedStatus: hasRecentActivity ? 'active' : 'paused'
-          } as CampaignGroup;
-        })
-      );
+        // Derive status: if group is paused, keep paused; otherwise check for recent activity
+        const derivedStatus = group.status === 'paused' ? 'paused' : (hasRecentActivity ? 'active' : 'paused');
+
+        // Debug logging in development
+        if (process.env.NODE_ENV === 'development' && (totalPageViews > 0 || totalClicks > 0)) {
+          console.debug(`Group "${group.name}": ${totalPageViews} page views, ${totalClicks} clicks, ${campaigns.length} campaigns`);
+        }
+
+        return {
+          ...group,
+          status: group.status as 'active' | 'paused',
+          insertion_order: group.insertion_orders,
+          campaigns_count: campaignsCount,
+          total_clicks: totalClicks,
+          total_page_views: totalPageViews,
+          derivedStatus
+        } as CampaignGroup;
+      });
 
         setCampaignGroups(processedGroups);
     } catch (error) {

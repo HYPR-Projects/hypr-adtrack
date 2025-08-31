@@ -77,168 +77,109 @@ export const useReportEvents = ({ selectedCampaignIds, dateRange, groupBy, selec
     setLoading(true);
     setError(null);
     try {
-      // 1. Fetch campaigns with their tags and insertion order info - query otimizada
-      const { data: campaignsData, error: campaignError } = await supabase
+      // Convert dates to proper format for the RPC
+      const startDate = effectiveDateRange.from.toISOString().split('T')[0];
+      const endDate = effectiveDateRange.to.toISOString().split('T')[0];
+      
+      // Determine if we need tag breakdown
+      const needsTagBreakdown = selectedDimensions.includes('campaign_tags');
+      
+      // Use the new aggregated RPC - NO LIMITS!
+      const { data: aggregatedData, error: aggregatedError } = await supabase
+        .rpc('get_report_aggregated', {
+          p_campaign_ids: selectedCampaignIds,
+          p_start_date: startDate,
+          p_end_date: endDate,
+          p_group_by: groupBy,
+          p_breakdown_by_tags: needsTagBreakdown
+        });
+      
+      if (aggregatedError) {
+        throw new Error(`Erro ao buscar dados agregados: ${aggregatedError.message}`);
+      }
+      
+      console.log('Report aggregated data (unlimited):', aggregatedData);
+      
+      if (!aggregatedData || aggregatedData.length === 0) {
+        setData([]);
+        return;
+      }
+      
+      // Fetch campaign details for display
+      const campaignIds = [...new Set(aggregatedData.map(d => d.campaign_id).filter(Boolean))];
+      const { data: campaigns, error: campaignsError } = await supabase
         .from('campaigns')
         .select(`
           id,
           name,
           status,
           description,
-          start_date,
-          end_date,
-          insertion_order_id,
           creative_format,
           insertion_orders (
             client_name
-          ),
-          tags!inner (
-            id,
-            code,
-            type,
-            title
           )
         `)
-        .in('id', selectedCampaignIds);
-
-        if (campaignError) throw campaignError;
-
-        // 2. Get all tag IDs and create mapping
-        const tagToCampaignMap = new Map<string, any>();
-        const allTagIds: string[] = [];
-
-        campaignsData?.forEach(campaign => {
-          campaign.tags?.forEach((tag: any) => {
-            tagToCampaignMap.set(tag.id, campaign);
-            allTagIds.push(tag.id);
-          });
-        });
-
-        if (allTagIds.length === 0) {
-          setData([]);
-          return;
+        .in('id', campaignIds);
+      
+      if (campaignsError) {
+        throw new Error(`Erro ao buscar campanhas: ${campaignsError.message}`);
+      }
+      
+      // Transform the data to match our ReportEvent interface
+      const result: ReportEvent[] = aggregatedData.map(row => {
+        const campaign = campaigns?.find(c => c.id === row.campaign_id);
+        const totalClicks = Number(row.cta_clicks) + Number(row.pin_clicks);
+        const pageViews = Number(row.page_views);
+        const ctr = pageViews > 0 ? (totalClicks / pageViews) * 100 : 0;
+        
+        // Format period based on groupBy
+        let periodFormat: string;
+        const periodDate = new Date(row.period_start);
+        
+        switch (groupBy) {
+          case 'day':
+            periodFormat = format(periodDate, 'dd/MM/yyyy');
+            break;
+          case 'week':
+            periodFormat = `Semana ${format(periodDate, 'dd/MM/yyyy')}`;
+            break;
+          case 'month':
+            periodFormat = format(periodDate, 'MM/yyyy');
+            break;
+          default:
+            periodFormat = format(periodDate, 'dd/MM/yyyy');
         }
-
-        // 3. Fetch events otimizado com índices
-        const { data: eventsData, error: eventsError } = await supabase
-          .from('events')
-          .select(`
-            event_type,
-            created_at,
-            tag_id,
-            tags!inner(type)
-          `)
-          .in('tag_id', allTagIds)
-          .gte('created_at', effectiveDateRange.from.toISOString())
-          .lte('created_at', effectiveDateRange.to.toISOString())
-          .order('created_at', { ascending: false })
-          .limit(10000); // Limite para performance
-
-        if (eventsError) throw eventsError;
-
-        // 4. Aggregate events by campaign/tag and time period
-        const aggregateMap = new Map<string, ReportEvent>();
-        const shouldBreakByTags = selectedDimensions.includes('campaign_tags');
-
-        eventsData?.forEach(event => {
-          const campaign = tagToCampaignMap.get(event.tag_id);
-          if (!campaign) return;
-
-          const eventDate = new Date(event.created_at);
-          let periodStart: Date;
-          let periodFormat: string;
-
-          switch (groupBy) {
-            case 'day':
-              periodStart = startOfDay(eventDate);
-              periodFormat = format(periodStart, 'dd/MM/yyyy');
-              break;
-            case 'week':
-              periodStart = startOfWeek(eventDate, { weekStartsOn: 1 }); // Monday
-              periodFormat = `Semana ${format(periodStart, 'dd/MM/yyyy')}`;
-              break;
-            case 'month':
-              periodStart = startOfMonth(eventDate);
-              periodFormat = format(periodStart, 'MM/yyyy');
-              break;
-            default:
-              periodStart = startOfDay(eventDate);
-              periodFormat = format(periodStart, 'dd/MM/yyyy');
-          }
-
-          // Find the specific tag for this event
-          const eventTag = campaign.tags?.find((tag: any) => tag.id === event.tag_id);
-          const tagType = (event as any).tags?.type;
-          
-          let key: string;
-          if (shouldBreakByTags && eventTag) {
-            // Group by campaign, period, and tag
-            key = `${campaign.id}-${periodStart.getTime()}-${eventTag.id}`;
-          } else {
-            // Group by campaign and period only
-            key = `${campaign.id}-${periodStart.getTime()}`;
-          }
-          
-          if (!aggregateMap.has(key)) {
-            aggregateMap.set(key, {
-              period: periodFormat,
-              campaignId: campaign.id,
-              campaignName: campaign.name,
-              campaignStatus: campaign.status || 'active',
-              campaignDescription: campaign.description || '',
-              campaignTags: shouldBreakByTags && eventTag ? eventTag.title : campaign.tags?.map((tag: any) => tag.title).join(', ') || '',
-              insertionOrderName: (campaign as any).insertion_orders?.client_name || 'Sem Insertion Order',
-              creativeFormat: campaign.creative_format || 'Não definido',
-              tagId: shouldBreakByTags && eventTag ? eventTag.id : undefined,
-              tagTitle: shouldBreakByTags && eventTag ? eventTag.title : undefined,
-              pageViews: 0,
-              ctaClicks: 0,
-              pinClicks: 0,
-              totalClicks: 0,
-              ctr: 0
-            });
-          }
-
-          const aggregate = aggregateMap.get(key)!;
-
-          // Classifica o evento baseado no tipo da tag se necessário
-          const classifiedEventType = classifyEventByTagType(event, tagType);
-
-          // Count events by classified type  
-          switch (classifiedEventType) {
-            case 'page_view':
-              aggregate.pageViews++;
-              break;
-            case 'click':
-              // This maps to 'click-button' tags
-              aggregate.ctaClicks++;
-              aggregate.totalClicks++;
-              break;
-            case 'pin_click':
-              // This maps to 'pin' tags
-              aggregate.pinClicks++;
-              aggregate.totalClicks++;
-              break;
-          }
-          
-          // Recalculate CTR
-          aggregate.ctr = aggregate.pageViews > 0 
-            ? Number(((aggregate.totalClicks / aggregate.pageViews) * 100).toFixed(2))
-            : 0;
-        });
-
-        // 5. Convert to array and sort
-        const resultData = Array.from(aggregateMap.values()).sort((a, b) => {
-          // Sort by period first, then by campaign name
-          const periodCompare = a.period.localeCompare(b.period);
-          if (periodCompare !== 0) return periodCompare;
-          return a.campaignName.localeCompare(b.campaignName);
-        });
-
-        setData(resultData);
-      } catch (err) {
-        console.error('Error fetching report data:', err);
-        setError(err instanceof Error ? err.message : 'An error occurred');
+        
+        return {
+          period: periodFormat,
+          campaignId: row.campaign_id,
+          campaignName: campaign?.name || 'Unknown',
+          campaignStatus: campaign?.status || 'active',
+          campaignDescription: campaign?.description || '',
+          campaignTags: needsTagBreakdown && row.tag_title ? row.tag_title : '',
+          insertionOrderName: (campaign as any)?.insertion_orders?.client_name || 'Sem Insertion Order',
+          creativeFormat: campaign?.creative_format || 'Não definido',
+          tagId: needsTagBreakdown ? row.tag_id : undefined,
+          tagTitle: needsTagBreakdown ? row.tag_title : undefined,
+          pageViews,
+          ctaClicks: Number(row.cta_clicks),
+          pinClicks: Number(row.pin_clicks),
+          totalClicks,
+          ctr: Number(ctr.toFixed(2))
+        };
+      });
+      
+      // Sort by period (most recent first) then by campaign name
+      result.sort((a, b) => {
+        const periodCompare = b.period.localeCompare(a.period);
+        if (periodCompare !== 0) return periodCompare;
+        return a.campaignName.localeCompare(b.campaignName);
+      });
+      
+      setData(result);
+    } catch (err) {
+      console.error('Error fetching report data:', err);
+      setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
     }

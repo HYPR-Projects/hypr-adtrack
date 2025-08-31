@@ -113,8 +113,8 @@ export const useCampaigns = () => {
             client_name
           )
         `)
-        .order('created_at', { ascending: false })
-        .limit(100); // Aumentar limite inicial mas implementar paginação
+        .order('created_at', { ascending: false });
+        // NO LIMITS - fetch all campaigns
 
       if (campaignsError) throw campaignsError;
 
@@ -145,75 +145,29 @@ export const useCampaigns = () => {
             last_hour: 0
           };
 
+          // Use the new RPC for precise metrics - NO LIMITS!
           if (tagIds.length > 0) {
-            // Usar view materializada se disponível, ou consulta otimizada
-            const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-            
-            const { data: eventsData, error: eventsError } = await supabase
-              .from('events')
-              .select(`
-                event_type, 
-                created_at,
-                tag_id,
-                tags!inner(type)
-              `)
-              .in('tag_id', tagIds)
-              .gte('created_at', sevenDaysAgo.toISOString())
-              .order('created_at', { ascending: false })
-              .limit(500); // Otimizar limite de eventos
-
-            if (!eventsError && eventsData) {
-              const now = new Date();
-              const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-              const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-
-              eventsData.forEach((event) => {
-                const eventDate = new Date(event.created_at);
-                const tagType = (event as any).tags?.type;
-                
-                // Classifica o evento baseado no tipo da tag se necessário
-                const classifiedEventType = classifyEventByTagType(event, tagType);
-                
-                // Count total events in last 7 days
-                if (eventDate >= sevenDaysAgo) {
-                  metrics.total_7d++;
-                }
-
-                // Count total events in last hour
-                if (eventDate >= oneHourAgo) {
-                  metrics.last_hour++;
-                }
-
-                // Count by classified event type
-                switch (classifiedEventType) {
-                  case 'click':
-                    metrics.cta_clicks++;
-                    break;
-                  case 'pin_click':
-                    metrics.pin_clicks++;
-                    break;
-                  case 'page_view':
-                    metrics.page_views++;
-                    break;
-                }
+            const { data: counters, error: countersError } = await supabase
+              .rpc('get_campaign_counters', {
+                campaign_ids: [campaign.id]
               });
+
+            if (!countersError && counters && counters.length > 0) {
+              const counter = counters[0];
+              metrics = {
+                cta_clicks: Number(counter.cta_clicks) || 0,
+                pin_clicks: Number(counter.pin_clicks) || 0,
+                page_views: Number(counter.page_views) || 0,
+                total_7d: Number(counter.total_7d) || 0,
+                last_hour: Number(counter.last_hour) || 0
+              };
+              
+              console.log(`Campaign ${campaign.name} metrics (unlimited):`, metrics);
             }
           }
 
-          // Calculate derived status based on activity in last 24 hours
-          const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-          let hasRecentActivity = false;
-          
-          if (tagIds.length > 0) {
-            const { data: recentEvents } = await supabase
-              .from('events')
-              .select('id')
-              .in('tag_id', tagIds)
-              .gte('created_at', twentyFourHoursAgo.toISOString())
-              .limit(1);
-            
-            hasRecentActivity = (recentEvents?.length || 0) > 0;
-          }
+          // Calculate derived status based on last hour activity (we already have this from metrics)
+          const hasRecentActivity = metrics.last_hour > 0;
 
           return {
             ...campaign,

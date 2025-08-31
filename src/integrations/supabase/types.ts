@@ -327,6 +327,17 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      get_campaign_counters: {
+        Args: { campaign_ids: string[] }
+        Returns: {
+          campaign_id: string
+          cta_clicks: number
+          last_hour: number
+          page_views: number
+          pin_clicks: number
+          total_7d: number
+        }[]
+      }
       get_campaign_metrics: {
         Args: {
           campaign_id_param: string
@@ -339,6 +350,24 @@ export type Database = {
           page_views: number
           pin_clicks: number
           total_events: number
+        }[]
+      }
+      get_report_aggregated: {
+        Args: {
+          p_breakdown_by_tags?: boolean
+          p_campaign_ids?: string[]
+          p_end_date?: string
+          p_group_by?: string
+          p_start_date?: string
+        }
+        Returns: {
+          campaign_id: string
+          cta_clicks: number
+          page_views: number
+          period_start: string
+          pin_clicks: number
+          tag_id: string
+          tag_title: string
         }[]
       }
       normalize_event_type: {

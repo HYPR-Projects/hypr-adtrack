@@ -16,7 +16,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
-import { Download, Filter, CalendarIcon, FileSpreadsheet, FileText, Search, Eye, MousePointer, MapPin, Target, ChevronRight, ChevronDown, Building, Folder, Users } from "lucide-react";
+import { Download, Filter, CalendarIcon, FileSpreadsheet, FileText, Search, Eye, MousePointer, MapPin, Target, ChevronDown, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -59,6 +59,7 @@ interface Campaign {
 
 interface ReportConfig {
   selectedCampaigns: string[];
+  selectedInsertionOrders: string[];
   dimensions: string[];
   metrics: string[];
   dateRange?: DateRange;
@@ -70,40 +71,49 @@ const Reports = () => {
   const { insertionOrders } = useInsertionOrders();
   const { campaignGroups } = useCampaignGroups();
   const { toast } = useToast();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [expandedIOs, setExpandedIOs] = useState<Set<string>>(new Set());
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [reportConfig, setReportConfig] = useState<ReportConfig>({
     selectedCampaigns: [],
-    dimensions: ['campaign_name', 'campaign_status'],
+    selectedInsertionOrders: [],
+    dimensions: ['campaign_name'],
     metrics: ['page_views', 'cta_clicks', 'pin_clicks', 'ctr'],
     groupBy: 'day'
   });
 
+  // Get effective campaign selection based on filters
+  const effectiveCampaignIds = useMemo(() => {
+    let filteredCampaigns = [...campaigns];
+    
+    // Filter by selected insertion orders if any
+    if (reportConfig.selectedInsertionOrders.length > 0) {
+      filteredCampaigns = filteredCampaigns.filter(campaign => 
+        reportConfig.selectedInsertionOrders.includes(campaign.insertion_order_id)
+      );
+    }
+    
+    // If specific campaigns are selected, use those, otherwise use filtered campaigns
+    if (reportConfig.selectedCampaigns.length > 0) {
+      return reportConfig.selectedCampaigns;
+    }
+    
+    return filteredCampaigns.map(c => c.id);
+  }, [campaigns, reportConfig.selectedCampaigns, reportConfig.selectedInsertionOrders]);
+
   // Fetch aggregated report data
   const { data: reportEvents, loading: eventsLoading, error: eventsError } = useReportEvents({
-    selectedCampaignIds: reportConfig.selectedCampaigns,
+    selectedCampaignIds: effectiveCampaignIds,
     dateRange: reportConfig.dateRange?.from && reportConfig.dateRange?.to ? 
       { from: reportConfig.dateRange.from, to: reportConfig.dateRange.to } : undefined,
     groupBy: reportConfig.groupBy,
     selectedDimensions: reportConfig.dimensions
   });
 
-  // Filter campaigns based on search
-  const filteredCampaigns = useMemo(() => {
-    return campaigns.filter(campaign => 
-      campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (campaign.description && campaign.description.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-  }, [campaigns, searchTerm]);
-
   // Get selected campaigns data
   const selectedCampaignsData = useMemo(() => {
-    if (reportConfig.selectedCampaigns.length === 0) return [];
+    if (effectiveCampaignIds.length === 0) return [];
     return campaigns.filter(campaign => 
-      reportConfig.selectedCampaigns.includes(campaign.id)
+      effectiveCampaignIds.includes(campaign.id)
     );
-  }, [campaigns, reportConfig.selectedCampaigns]);
+  }, [campaigns, effectiveCampaignIds]);
 
   // Generate report data from aggregated events
   const reportData = useMemo(() => {
@@ -159,66 +169,14 @@ const Reports = () => {
     });
   }, [reportEvents, reportConfig]);
 
-  // Toggle functions for hierarchical structure
-  const toggleIOExpansion = (ioId: string) => {
-    const newExpanded = new Set(expandedIOs);
-    if (newExpanded.has(ioId)) {
-      newExpanded.delete(ioId);
-    } else {
-      newExpanded.add(ioId);
-    }
-    setExpandedIOs(newExpanded);
+  const handleInsertionOrderToggle = (ioId: string, checked: boolean) => {
+    setReportConfig(prev => ({
+      ...prev,
+      selectedInsertionOrders: checked 
+        ? [...prev.selectedInsertionOrders, ioId]
+        : prev.selectedInsertionOrders.filter(id => id !== ioId)
+    }));
   };
-
-  const toggleGroupExpansion = (groupId: string) => {
-    const newExpanded = new Set(expandedGroups);
-    if (newExpanded.has(groupId)) {
-      newExpanded.delete(groupId);
-    } else {
-      newExpanded.add(groupId);
-    }
-    setExpandedGroups(newExpanded);
-  };
-
-  // Get organized data structure
-  const organizedData = useMemo(() => {
-    return insertionOrders.map(io => {
-      // Get campaign groups for this IO
-      const groups = campaignGroups.filter(group => 
-        group.insertion_order_id === io.id &&
-        (searchTerm === "" || 
-         group.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-         group.description?.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
-
-      // Get direct campaigns for this IO (not in groups)
-      const directCampaigns = campaigns.filter(campaign => 
-        campaign.insertion_order_id === io.id &&
-        !campaignGroups.some(group => group.id === campaign.campaign_group_id) &&
-        (searchTerm === "" || 
-         campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-         campaign.description?.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
-
-      return {
-        ...io,
-        groups: groups.map(group => ({
-          ...group,
-          campaigns: campaigns.filter(campaign => 
-            campaign.campaign_group_id === group.id &&
-            (searchTerm === "" || 
-             campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-             campaign.description?.toLowerCase().includes(searchTerm.toLowerCase()))
-          )
-        })),
-        directCampaigns
-      };
-    }).filter(io => 
-      io.groups.length > 0 || 
-      io.directCampaigns.length > 0 ||
-      (searchTerm === "" || io.client_name.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-  }, [insertionOrders, campaignGroups, campaigns, searchTerm]);
 
   const handleCampaignToggle = (campaignId: string, checked: boolean) => {
     setReportConfig(prev => ({
@@ -226,19 +184,6 @@ const Reports = () => {
       selectedCampaigns: checked 
         ? [...prev.selectedCampaigns, campaignId]
         : prev.selectedCampaigns.filter(id => id !== campaignId)
-    }));
-  };
-
-  const handleSelectAllCampaigns = () => {
-    const allCampaignIds = organizedData.flatMap(io => [
-      ...io.directCampaigns.map(c => c.id),
-      ...io.groups.flatMap(group => group.campaigns.map(c => c.id))
-    ]);
-    
-    const allSelected = allCampaignIds.every(id => reportConfig.selectedCampaigns.includes(id));
-    setReportConfig(prev => ({
-      ...prev,
-      selectedCampaigns: allSelected ? [] : allCampaignIds
     }));
   };
 
@@ -352,342 +297,329 @@ const Reports = () => {
       showReportsButton={false}
       backButton={{ href: "/criativos", label: "← Voltar" }}
     >
-        {/* Page Title */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold">Relatórios</h1>
-          <p className="text-muted-foreground">Customize e exporte relatórios detalhados das suas campanhas</p>
-        </div>
-        {/* Actions Bar */}
-        <div className="flex justify-end gap-3 mb-6">
-          <Button 
-            variant="outline" 
-            onClick={exportToCSV}
-            disabled={reportData.length === 0}
-            className="gap-2"
-          >
-            <FileText className="w-4 h-4" />
-            Exportar CSV
-          </Button>
-          <Button 
-            onClick={exportToExcel}
-            disabled={reportData.length === 0}
-            className="gap-2"
-          >
-            <FileSpreadsheet className="w-4 h-4" />
-            Exportar Excel
-          </Button>
-        </div>
-          
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-12">
-          {/* Configuration Panel */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* Hierarchical Selection */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Filter className="w-5 h-5" />
-                  Seleção Hierárquica
-                </CardTitle>
-                <CardDescription>
-                  Escolha por Insertion Orders, Campanhas e Criativos
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                  <Input
-                    placeholder="Buscar por qualquer item..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <Label className="text-sm font-medium">Estrutura hierárquica</Label>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={handleSelectAllCampaigns}
-                    className="text-xs h-8"
-                  >
-                    {(() => {
-                      const allCampaignIds = organizedData.flatMap(io => [
-                        ...io.directCampaigns.map(c => c.id),
-                        ...io.groups.flatMap(group => group.campaigns.map(c => c.id))
-                      ]);
-                      return allCampaignIds.every(id => reportConfig.selectedCampaigns.includes(id)) ? 'Desmarcar' : 'Selecionar';
-                    })()} todas
-                  </Button>
-                </div>
-
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {organizedData.map((io) => (
-                    <div key={io.id} className="space-y-1">
-                      {/* Insertion Order */}
-                      <div 
-                        className="flex items-center gap-2 p-2 border rounded-lg cursor-pointer hover:bg-muted/50"
-                        onClick={() => toggleIOExpansion(io.id)}
-                      >
-                        {expandedIOs.has(io.id) ? (
-                          <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                        ) : (
-                          <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                        )}
-                        <Building className="w-4 h-4 text-blue-600" />
-                        <span className="text-sm font-medium">{io.client_name}</span>
-                        <Badge variant="outline" className="text-xs ml-auto">
-                          {io.groups.reduce((acc, g) => acc + g.campaigns.length, 0) + io.directCampaigns.length} criativos
-                        </Badge>
-                      </div>
-
-                      {/* Expanded content */}
-                      {expandedIOs.has(io.id) && (
-                        <div className="ml-6 space-y-1">
-                          {/* Direct campaigns */}
-                          {io.directCampaigns.map((campaign) => (
-                            <div key={campaign.id} className="flex items-center gap-2 p-2 border rounded bg-muted/30">
-                              <Checkbox
-                                id={campaign.id}
-                                checked={reportConfig.selectedCampaigns.includes(campaign.id)}
-                                onCheckedChange={(checked) => handleCampaignToggle(campaign.id, !!checked)}
-                              />
-                              <Users className="w-4 h-4 text-green-600" />
-                              <div className="flex-1 min-w-0">
-                                <Label htmlFor={campaign.id} className="text-sm cursor-pointer">
-                                  {campaign.name}
-                                </Label>
-                                <p className="text-xs text-muted-foreground">
-                                  {campaign.description}
-                                </p>
-                              </div>
-                              <Badge variant={campaign.status === 'active' ? 'default' : 'secondary'} className="text-xs">
-                                {campaign.status === 'active' ? 'Ativa' : 'Pausada'}
-                              </Badge>
-                            </div>
-                          ))}
-
-                          {/* Campaign Groups */}
-                          {io.groups.map((group) => (
-                            <div key={group.id} className="space-y-1">
-                              <div 
-                                className="flex items-center gap-2 p-2 border rounded bg-muted/20 cursor-pointer hover:bg-muted/40"
-                                onClick={() => toggleGroupExpansion(group.id)}
-                              >
-                                {expandedGroups.has(group.id) ? (
-                                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                                ) : (
-                                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                                )}
-                                <Folder className="w-4 h-4 text-orange-600" />
-                                <span className="text-sm font-medium">{group.name}</span>
-                                <Badge variant="outline" className="text-xs ml-auto">
-                                  {group.campaigns.length} criativos
-                                </Badge>
-                              </div>
-
-                              {/* Campaigns in group */}
-                              {expandedGroups.has(group.id) && (
-                                <div className="ml-6 space-y-1">
-                                  {group.campaigns.map((campaign) => (
-                                    <div key={campaign.id} className="flex items-center gap-2 p-2 border rounded bg-muted/30">
-                                      <Checkbox
-                                        id={campaign.id}
-                                        checked={reportConfig.selectedCampaigns.includes(campaign.id)}
-                                        onCheckedChange={(checked) => handleCampaignToggle(campaign.id, !!checked)}
-                                      />
-                                      <Users className="w-4 h-4 text-green-600" />
-                                      <div className="flex-1 min-w-0">
-                                        <Label htmlFor={campaign.id} className="text-sm cursor-pointer">
-                                          {campaign.name}
-                                        </Label>
-                                        <p className="text-xs text-muted-foreground">
-                                          {campaign.description}
-                                        </p>
-                                      </div>
-                                      <Badge variant={campaign.status === 'active' ? 'default' : 'secondary'} className="text-xs">
-                                        {campaign.status === 'active' ? 'Ativa' : 'Pausada'}
-                                      </Badge>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          ))}
+      {/* Page Title */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold">Relatórios</h1>
+        <p className="text-muted-foreground">Customize e exporte relatórios detalhados das suas campanhas</p>
+      </div>
+      
+      {/* Actions Bar */}
+      <div className="flex justify-end gap-3 mb-6">
+        <Button 
+          variant="outline" 
+          onClick={exportToCSV}
+          disabled={reportData.length === 0}
+          className="gap-2"
+        >
+          <FileText className="w-4 h-4" />
+          Exportar CSV
+        </Button>
+        <Button 
+          onClick={exportToExcel}
+          disabled={reportData.length === 0}
+          className="gap-2"
+        >
+          <FileSpreadsheet className="w-4 h-4" />
+          Exportar Excel
+        </Button>
+      </div>
+        
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-12">
+        {/* Configuration Panel */}
+        <div className="lg:col-span-1 space-y-6">
+          {/* Filtros Adicionais */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Filter className="w-5 h-5" />
+                Filtros Adicionais
+              </CardTitle>
+              <CardDescription>
+                Filtre por Insertion Orders e Campanhas específicas
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Insertion Orders Multi-Select */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Insertion Orders</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-between text-left font-normal"
+                    >
+                      <span className="truncate">
+                        {reportConfig.selectedInsertionOrders.length === 0
+                          ? "Selecione Insertion Orders"
+                          : `${reportConfig.selectedInsertionOrders.length} selecionada(s)`}
+                      </span>
+                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <div className="p-3 space-y-2 max-h-60 overflow-y-auto">
+                      {insertionOrders.map((io) => (
+                        <div key={io.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`io-${io.id}`}
+                            checked={reportConfig.selectedInsertionOrders.includes(io.id)}
+                            onCheckedChange={(checked) => 
+                              handleInsertionOrderToggle(io.id, !!checked)
+                            }
+                          />
+                          <Label 
+                            htmlFor={`io-${io.id}`} 
+                            className="text-sm cursor-pointer flex-1"
+                          >
+                            {io.client_name}
+                          </Label>
                         </div>
-                      )}
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Dimensions Selection */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Dimensões</CardTitle>
-                <CardDescription>
-                  Selecione as dimensões a serem incluídas no relatório
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {availableDimensions.map((dimension) => (
-                  <div key={dimension.id} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={dimension.id}
-                      checked={reportConfig.dimensions.includes(dimension.id)}
-                      onCheckedChange={(checked) => handleDimensionToggle(dimension.id, !!checked)}
-                    />
-                    <Label htmlFor={dimension.id} className="text-sm cursor-pointer">
-                      {dimension.label}
-                    </Label>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-
-            {/* Metrics Selection */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Métricas</CardTitle>
-                <CardDescription>
-                  Escolha as métricas a serem incluídas no relatório
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {availableMetrics.map((metric) => {
-                  const Icon = metric.icon;
-                  return (
-                    <div key={metric.id} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={metric.id}
-                        checked={reportConfig.metrics.includes(metric.id)}
-                        onCheckedChange={(checked) => handleMetricToggle(metric.id, !!checked)}
-                      />
-                      <Icon className="w-4 h-4 text-muted-foreground" />
-                      <Label htmlFor={metric.id} className="text-sm cursor-pointer">
-                        {metric.label}
-                      </Label>
-                    </div>
-                  );
-                })}
-              </CardContent>
-            </Card>
-
-            {/* Additional Filters */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Filtros Adicionais</CardTitle>
-                <CardDescription>
-                  Configure filtros extras para o relatório
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Período</Label>
-                  <DateRangePicker />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label>Agrupar por</Label>
-                  <Select
-                    value={reportConfig.groupBy}
-                    onValueChange={(value: 'day' | 'week' | 'month') => 
-                      setReportConfig(prev => ({ ...prev, groupBy: value }))
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="day">Dia</SelectItem>
-                      <SelectItem value="week">Semana</SelectItem>
-                      <SelectItem value="month">Mês</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Preview Panel */}
-          <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="text-lg">Preview do Relatório</CardTitle>
-                    <CardDescription>
-                      Visualize os dados antes de exportar
-                    </CardDescription>
-                  </div>
-                  <Badge variant="outline" className="text-xs">
-                    {reportData.length} linha{reportData.length !== 1 ? 's' : ''}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {eventsLoading ? (
-                  <div className="space-y-3">
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-full" />
-                  </div>
-                ) : eventsError ? (
-                  <div className="text-center py-12">
-                    <FileText className="w-12 h-12 text-destructive mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-destructive mb-2">
-                      Erro ao carregar dados
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      {eventsError}
-                    </p>
-                  </div>
-                ) : reportData.length === 0 ? (
-                  <div className="text-center py-12">
-                    <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-muted-foreground mb-2">
-                      {reportConfig.selectedCampaigns.length === 0 
-                        ? "Nenhuma campanha selecionada" 
-                        : "Nenhum evento encontrado"
-                      }
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      {reportConfig.selectedCampaigns.length === 0 
-                        ? "Selecione pelo menos uma campanha para visualizar o relatório"
-                        : "Não há eventos para as campanhas e período selecionados"
-                      }
-                    </p>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          {Object.keys(reportData[0]).map((column) => (
-                            <TableHead key={column}>{column}</TableHead>
-                          ))}
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {reportData.map((row, index) => (
-                          <TableRow key={index}>
-                            {Object.values(row).map((value, cellIndex) => (
-                              <TableCell key={cellIndex}>
-                                {String(value)}
-                              </TableCell>
-                            ))}
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                  </PopoverContent>
+                </Popover>
+                {reportConfig.selectedInsertionOrders.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {reportConfig.selectedInsertionOrders.map(ioId => {
+                      const io = insertionOrders.find(i => i.id === ioId);
+                      return io ? (
+                        <Badge key={ioId} variant="secondary" className="text-xs">
+                          {io.client_name}
+                          <X 
+                            className="ml-1 h-3 w-3 cursor-pointer" 
+                            onClick={() => handleInsertionOrderToggle(ioId, false)}
+                          />
+                        </Badge>
+                      ) : null;
+                    })}
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          </div>
+              </div>
+
+              {/* Campaigns Multi-Select */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Campanhas Específicas</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-between text-left font-normal"
+                    >
+                      <span className="truncate">
+                        {reportConfig.selectedCampaigns.length === 0
+                          ? "Selecione Campanhas"
+                          : `${reportConfig.selectedCampaigns.length} selecionada(s)`}
+                      </span>
+                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <div className="p-3 space-y-2 max-h-60 overflow-y-auto">
+                      {campaigns.map((campaign) => (
+                        <div key={campaign.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`campaign-${campaign.id}`}
+                            checked={reportConfig.selectedCampaigns.includes(campaign.id)}
+                            onCheckedChange={(checked) => 
+                              handleCampaignToggle(campaign.id, !!checked)
+                            }
+                          />
+                          <div className="flex-1 min-w-0">
+                            <Label 
+                              htmlFor={`campaign-${campaign.id}`} 
+                              className="text-sm cursor-pointer block"
+                            >
+                              {campaign.name}
+                            </Label>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {campaign.description}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                {reportConfig.selectedCampaigns.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {reportConfig.selectedCampaigns.map(campaignId => {
+                      const campaign = campaigns.find(c => c.id === campaignId);
+                      return campaign ? (
+                        <Badge key={campaignId} variant="secondary" className="text-xs">
+                          {campaign.name}
+                          <X 
+                            className="ml-1 h-3 w-3 cursor-pointer" 
+                            onClick={() => handleCampaignToggle(campaignId, false)}
+                          />
+                        </Badge>
+                      ) : null;
+                    })}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Dimensions Selection */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Dimensões</CardTitle>
+              <CardDescription>
+                Selecione as dimensões a serem incluídas no relatório
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {availableDimensions.map((dimension) => (
+                <div key={dimension.id} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={dimension.id}
+                    checked={reportConfig.dimensions.includes(dimension.id)}
+                    onCheckedChange={(checked) => handleDimensionToggle(dimension.id, !!checked)}
+                  />
+                  <Label htmlFor={dimension.id} className="text-sm cursor-pointer">
+                    {dimension.label}
+                  </Label>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* Metrics Selection */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Métricas</CardTitle>
+              <CardDescription>
+                Escolha as métricas a serem incluídas no relatório
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {availableMetrics.map((metric) => {
+                const Icon = metric.icon;
+                return (
+                  <div key={metric.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={metric.id}
+                      checked={reportConfig.metrics.includes(metric.id)}
+                      onCheckedChange={(checked) => handleMetricToggle(metric.id, !!checked)}
+                    />
+                    <Icon className="w-4 h-4 text-muted-foreground" />
+                    <Label htmlFor={metric.id} className="text-sm cursor-pointer">
+                      {metric.label}
+                    </Label>
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+
+          {/* Date and Grouping */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Configurações Temporais</CardTitle>
+              <CardDescription>
+                Configure período e agrupamento dos dados
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Período</Label>
+                <DateRangePicker />
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Agrupar por</Label>
+                <Select
+                  value={reportConfig.groupBy}
+                  onValueChange={(value: 'day' | 'week' | 'month') => 
+                    setReportConfig(prev => ({ ...prev, groupBy: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="day">Dia</SelectItem>
+                    <SelectItem value="week">Semana</SelectItem>
+                    <SelectItem value="month">Mês</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
         </div>
+
+        {/* Preview Panel */}
+        <div className="lg:col-span-2">
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle className="text-lg">Preview do Relatório</CardTitle>
+                  <CardDescription>
+                    Visualize os dados antes de exportar
+                  </CardDescription>
+                </div>
+                <Badge variant="outline" className="text-xs">
+                  {reportData.length} linha{reportData.length !== 1 ? 's' : ''}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {eventsLoading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                </div>
+              ) : eventsError ? (
+                <div className="text-center py-12">
+                  <FileText className="w-12 h-12 text-destructive mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-destructive mb-2">
+                    Erro ao carregar dados
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {eventsError}
+                  </p>
+                </div>
+              ) : reportData.length === 0 ? (
+                <div className="text-center py-12">
+                  <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-muted-foreground mb-2">
+                    Nenhum evento encontrado
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Não há eventos para os filtros selecionados ou não há dados suficientes
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        {Object.keys(reportData[0]).map((column) => (
+                          <TableHead key={column}>{column}</TableHead>
+                        ))}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {reportData.map((row, index) => (
+                        <TableRow key={index}>
+                          {Object.values(row).map((value, cellIndex) => (
+                            <TableCell key={cellIndex}>
+                              {String(value)}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </AppLayout>
   );
 };

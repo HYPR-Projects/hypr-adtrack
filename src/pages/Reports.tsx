@@ -41,15 +41,6 @@ const availableDimensions = [
   { id: 'creative_format', label: 'Formato do Criativo' },
 ];
 
-// Available creative formats
-const availableCreativeFormats = [
-  { id: 'banner', label: 'Banner' },
-  { id: 'video', label: 'Vídeo' },
-  { id: 'carousel', label: 'Carrossel' },
-  { id: 'story', label: 'Stories' },
-  { id: 'feed', label: 'Feed' },
-  { id: 'interstitial', label: 'Intersticial' },
-];
 
 interface Campaign {
   id: string;
@@ -70,7 +61,7 @@ interface Campaign {
 interface ReportConfig {
   selectedCampaigns: string[];
   selectedInsertionOrders: string[];
-  selectedCreativeFormats: string[];
+  selectedCreatives: string[];
   dimensions: string[];
   metrics: string[];
   dateRange?: DateRange;
@@ -85,11 +76,27 @@ const Reports = () => {
   const [reportConfig, setReportConfig] = useState<ReportConfig>({
     selectedCampaigns: [],
     selectedInsertionOrders: [],
-    selectedCreativeFormats: [],
+    selectedCreatives: [],
     dimensions: ['campaign_name'],
     metrics: ['page_views', 'cta_clicks', 'pin_clicks', 'ctr'],
     groupBy: 'day'
   });
+
+  // Get unique creatives from campaigns
+  const availableCreatives = useMemo(() => {
+    const creatives = campaigns.map(campaign => ({
+      id: campaign.id,
+      name: campaign.name,
+      description: campaign.description
+    }));
+    
+    // Remove duplicates by name
+    const uniqueCreatives = creatives.filter((creative, index, self) => 
+      index === self.findIndex(c => c.name === creative.name)
+    );
+    
+    return uniqueCreatives;
+  }, [campaigns]);
 
   // Get effective campaign selection based on filters
   const effectiveCampaignIds = useMemo(() => {
@@ -102,13 +109,20 @@ const Reports = () => {
       );
     }
     
+    // Filter by selected creatives if any
+    if (reportConfig.selectedCreatives.length > 0) {
+      filteredCampaigns = filteredCampaigns.filter(campaign => 
+        reportConfig.selectedCreatives.includes(campaign.id)
+      );
+    }
+    
     // If specific campaigns are selected, use those, otherwise use filtered campaigns
     if (reportConfig.selectedCampaigns.length > 0) {
       return reportConfig.selectedCampaigns;
     }
     
     return filteredCampaigns.map(c => c.id);
-  }, [campaigns, reportConfig.selectedCampaigns, reportConfig.selectedInsertionOrders]);
+  }, [campaigns, reportConfig.selectedCampaigns, reportConfig.selectedInsertionOrders, reportConfig.selectedCreatives]);
 
   // Fetch aggregated report data
   const { data: reportEvents, loading: eventsLoading, error: eventsError } = useReportEvents({
@@ -190,12 +204,12 @@ const Reports = () => {
     }));
   };
 
-  const handleCreativeFormatToggle = (formatId: string, checked: boolean) => {
+  const handleCreativeToggle = (creativeId: string, checked: boolean) => {
     setReportConfig(prev => ({
       ...prev,
-      selectedCreativeFormats: checked 
-        ? [...prev.selectedCreativeFormats, formatId]
-        : prev.selectedCreativeFormats.filter(id => id !== formatId)
+      selectedCreatives: checked 
+        ? [...prev.selectedCreatives, creativeId]
+        : prev.selectedCreatives.filter(id => id !== creativeId)
     }));
   };
 
@@ -481,7 +495,7 @@ const Reports = () => {
 
               {/* Creative Formats Multi-Select */}
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Formatos Criativos</Label>
+                <Label className="text-sm font-medium">Criativos</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -489,45 +503,50 @@ const Reports = () => {
                       className="w-full justify-between text-left font-normal"
                     >
                       <span className="truncate">
-                        {reportConfig.selectedCreativeFormats.length === 0
-                          ? "Selecione Formatos"
-                          : `${reportConfig.selectedCreativeFormats.length} selecionado(s)`}
+                        {reportConfig.selectedCreatives.length === 0
+                          ? "Selecione Criativos"
+                          : `${reportConfig.selectedCreatives.length} selecionado(s)`}
                       </span>
                       <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-full p-0" align="start">
                     <div className="p-3 space-y-2 max-h-60 overflow-y-auto">
-                      {availableCreativeFormats.map((format) => (
-                        <div key={format.id} className="flex items-center space-x-2">
+                      {availableCreatives.map((creative) => (
+                        <div key={creative.id} className="flex items-center space-x-2">
                           <Checkbox
-                            id={`format-${format.id}`}
-                            checked={reportConfig.selectedCreativeFormats.includes(format.id)}
+                            id={`creative-${creative.id}`}
+                            checked={reportConfig.selectedCreatives.includes(creative.id)}
                             onCheckedChange={(checked) => 
-                              handleCreativeFormatToggle(format.id, !!checked)
+                              handleCreativeToggle(creative.id, !!checked)
                             }
                           />
-                          <Label 
-                            htmlFor={`format-${format.id}`} 
-                            className="text-sm cursor-pointer flex-1"
-                          >
-                            {format.label}
-                          </Label>
+                          <div className="flex-1 min-w-0">
+                            <Label 
+                              htmlFor={`creative-${creative.id}`} 
+                              className="text-sm cursor-pointer block"
+                            >
+                              {creative.name}
+                            </Label>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {creative.description}
+                            </p>
+                          </div>
                         </div>
                       ))}
                     </div>
                   </PopoverContent>
                 </Popover>
-                {reportConfig.selectedCreativeFormats.length > 0 && (
+                {reportConfig.selectedCreatives.length > 0 && (
                   <div className="flex flex-wrap gap-1">
-                    {reportConfig.selectedCreativeFormats.map(formatId => {
-                      const format = availableCreativeFormats.find(f => f.id === formatId);
-                      return format ? (
-                        <Badge key={formatId} variant="secondary" className="text-xs">
-                          {format.label}
+                    {reportConfig.selectedCreatives.map(creativeId => {
+                      const creative = availableCreatives.find(c => c.id === creativeId);
+                      return creative ? (
+                        <Badge key={creativeId} variant="secondary" className="text-xs">
+                          {creative.name}
                           <X 
                             className="ml-1 h-3 w-3 cursor-pointer" 
-                            onClick={() => handleCreativeFormatToggle(formatId, false)}
+                            onClick={() => handleCreativeToggle(creativeId, false)}
                           />
                         </Badge>
                       ) : null;

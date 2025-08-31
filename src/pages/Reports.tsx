@@ -1,6 +1,8 @@
 import { useState, useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useCampaigns } from "@/hooks/useCampaigns";
+import { useInsertionOrders } from "@/hooks/useInsertionOrders";
+import { useCampaignGroups } from "@/hooks/useCampaignGroups";
 import { useReportEvents } from "@/hooks/useReportEvents";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +16,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
-import { Download, Filter, CalendarIcon, FileSpreadsheet, FileText, Search, Eye, MousePointer, MapPin, Target } from "lucide-react";
+import { Download, Filter, CalendarIcon, FileSpreadsheet, FileText, Search, Eye, MousePointer, MapPin, Target, ChevronRight, ChevronDown, Building, Folder, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -65,8 +67,12 @@ interface ReportConfig {
 
 const Reports = () => {
   const { campaigns, loading } = useCampaigns();
+  const { insertionOrders } = useInsertionOrders();
+  const { campaignGroups } = useCampaignGroups();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
+  const [expandedIOs, setExpandedIOs] = useState<Set<string>>(new Set());
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [reportConfig, setReportConfig] = useState<ReportConfig>({
     selectedCampaigns: [],
     dimensions: ['campaign_name', 'campaign_status'],
@@ -153,6 +159,67 @@ const Reports = () => {
     });
   }, [reportEvents, reportConfig]);
 
+  // Toggle functions for hierarchical structure
+  const toggleIOExpansion = (ioId: string) => {
+    const newExpanded = new Set(expandedIOs);
+    if (newExpanded.has(ioId)) {
+      newExpanded.delete(ioId);
+    } else {
+      newExpanded.add(ioId);
+    }
+    setExpandedIOs(newExpanded);
+  };
+
+  const toggleGroupExpansion = (groupId: string) => {
+    const newExpanded = new Set(expandedGroups);
+    if (newExpanded.has(groupId)) {
+      newExpanded.delete(groupId);
+    } else {
+      newExpanded.add(groupId);
+    }
+    setExpandedGroups(newExpanded);
+  };
+
+  // Get organized data structure
+  const organizedData = useMemo(() => {
+    return insertionOrders.map(io => {
+      // Get campaign groups for this IO
+      const groups = campaignGroups.filter(group => 
+        group.insertion_order_id === io.id &&
+        (searchTerm === "" || 
+         group.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+         group.description?.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+
+      // Get direct campaigns for this IO (not in groups)
+      const directCampaigns = campaigns.filter(campaign => 
+        campaign.insertion_order_id === io.id &&
+        !campaignGroups.some(group => group.id === campaign.campaign_group_id) &&
+        (searchTerm === "" || 
+         campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+         campaign.description?.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+
+      return {
+        ...io,
+        groups: groups.map(group => ({
+          ...group,
+          campaigns: campaigns.filter(campaign => 
+            campaign.campaign_group_id === group.id &&
+            (searchTerm === "" || 
+             campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+             campaign.description?.toLowerCase().includes(searchTerm.toLowerCase()))
+          )
+        })),
+        directCampaigns
+      };
+    }).filter(io => 
+      io.groups.length > 0 || 
+      io.directCampaigns.length > 0 ||
+      (searchTerm === "" || io.client_name.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+  }, [insertionOrders, campaignGroups, campaigns, searchTerm]);
+
   const handleCampaignToggle = (campaignId: string, checked: boolean) => {
     setReportConfig(prev => ({
       ...prev,
@@ -163,10 +230,15 @@ const Reports = () => {
   };
 
   const handleSelectAllCampaigns = () => {
-    const allSelected = filteredCampaigns.length === reportConfig.selectedCampaigns.length;
+    const allCampaignIds = organizedData.flatMap(io => [
+      ...io.directCampaigns.map(c => c.id),
+      ...io.groups.flatMap(group => group.campaigns.map(c => c.id))
+    ]);
+    
+    const allSelected = allCampaignIds.every(id => reportConfig.selectedCampaigns.includes(id));
     setReportConfig(prev => ({
       ...prev,
-      selectedCampaigns: allSelected ? [] : filteredCampaigns.map(c => c.id)
+      selectedCampaigns: allSelected ? [] : allCampaignIds
     }));
   };
 
@@ -309,22 +381,22 @@ const Reports = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-12">
           {/* Configuration Panel */}
           <div className="lg:col-span-1 space-y-6">
-            {/* Campaign Selection */}
+            {/* Hierarchical Selection */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Filter className="w-5 h-5" />
-                  Seleção de Campanhas
+                  Seleção Hierárquica
                 </CardTitle>
                 <CardDescription>
-                  Escolha as campanhas para incluir no relatório
+                  Escolha por Insertion Orders, Campanhas e Criativos
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
-                    placeholder="Buscar campanhas..."
+                    placeholder="Buscar por qualquer item..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10"
@@ -332,36 +404,118 @@ const Reports = () => {
                 </div>
                 
                 <div className="flex items-center justify-between">
-                  <Label className="text-sm font-medium">Campanhas disponíveis</Label>
+                  <Label className="text-sm font-medium">Estrutura hierárquica</Label>
                   <Button 
                     variant="ghost" 
                     size="sm"
                     onClick={handleSelectAllCampaigns}
                     className="text-xs h-8"
                   >
-                    {filteredCampaigns.length === reportConfig.selectedCampaigns.length ? 'Desmarcar' : 'Selecionar'} todas
+                    {(() => {
+                      const allCampaignIds = organizedData.flatMap(io => [
+                        ...io.directCampaigns.map(c => c.id),
+                        ...io.groups.flatMap(group => group.campaigns.map(c => c.id))
+                      ]);
+                      return allCampaignIds.every(id => reportConfig.selectedCampaigns.includes(id)) ? 'Desmarcar' : 'Selecionar';
+                    })()} todas
                   </Button>
                 </div>
 
-                <div className="space-y-3 max-h-48 overflow-y-auto">
-                  {filteredCampaigns.map((campaign) => (
-                    <div key={campaign.id} className="flex items-start space-x-3 p-3 border rounded-lg">
-                      <Checkbox
-                        id={campaign.id}
-                        checked={reportConfig.selectedCampaigns.includes(campaign.id)}
-                        onCheckedChange={(checked) => handleCampaignToggle(campaign.id, !!checked)}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <Label htmlFor={campaign.id} className="text-sm font-medium cursor-pointer">
-                          {campaign.name}
-                        </Label>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {campaign.description}
-                        </p>
-                        <Badge variant={campaign.status === 'active' ? 'default' : 'secondary'} className="mt-2 text-xs">
-                          {campaign.status === 'active' ? 'Ativa' : 'Pausada'}
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {organizedData.map((io) => (
+                    <div key={io.id} className="space-y-1">
+                      {/* Insertion Order */}
+                      <div 
+                        className="flex items-center gap-2 p-2 border rounded-lg cursor-pointer hover:bg-muted/50"
+                        onClick={() => toggleIOExpansion(io.id)}
+                      >
+                        {expandedIOs.has(io.id) ? (
+                          <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                        )}
+                        <Building className="w-4 h-4 text-blue-600" />
+                        <span className="text-sm font-medium">{io.client_name}</span>
+                        <Badge variant="outline" className="text-xs ml-auto">
+                          {io.groups.reduce((acc, g) => acc + g.campaigns.length, 0) + io.directCampaigns.length} criativos
                         </Badge>
                       </div>
+
+                      {/* Expanded content */}
+                      {expandedIOs.has(io.id) && (
+                        <div className="ml-6 space-y-1">
+                          {/* Direct campaigns */}
+                          {io.directCampaigns.map((campaign) => (
+                            <div key={campaign.id} className="flex items-center gap-2 p-2 border rounded bg-muted/30">
+                              <Checkbox
+                                id={campaign.id}
+                                checked={reportConfig.selectedCampaigns.includes(campaign.id)}
+                                onCheckedChange={(checked) => handleCampaignToggle(campaign.id, !!checked)}
+                              />
+                              <Users className="w-4 h-4 text-green-600" />
+                              <div className="flex-1 min-w-0">
+                                <Label htmlFor={campaign.id} className="text-sm cursor-pointer">
+                                  {campaign.name}
+                                </Label>
+                                <p className="text-xs text-muted-foreground">
+                                  {campaign.description}
+                                </p>
+                              </div>
+                              <Badge variant={campaign.status === 'active' ? 'default' : 'secondary'} className="text-xs">
+                                {campaign.status === 'active' ? 'Ativa' : 'Pausada'}
+                              </Badge>
+                            </div>
+                          ))}
+
+                          {/* Campaign Groups */}
+                          {io.groups.map((group) => (
+                            <div key={group.id} className="space-y-1">
+                              <div 
+                                className="flex items-center gap-2 p-2 border rounded bg-muted/20 cursor-pointer hover:bg-muted/40"
+                                onClick={() => toggleGroupExpansion(group.id)}
+                              >
+                                {expandedGroups.has(group.id) ? (
+                                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                                ) : (
+                                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                                )}
+                                <Folder className="w-4 h-4 text-orange-600" />
+                                <span className="text-sm font-medium">{group.name}</span>
+                                <Badge variant="outline" className="text-xs ml-auto">
+                                  {group.campaigns.length} criativos
+                                </Badge>
+                              </div>
+
+                              {/* Campaigns in group */}
+                              {expandedGroups.has(group.id) && (
+                                <div className="ml-6 space-y-1">
+                                  {group.campaigns.map((campaign) => (
+                                    <div key={campaign.id} className="flex items-center gap-2 p-2 border rounded bg-muted/30">
+                                      <Checkbox
+                                        id={campaign.id}
+                                        checked={reportConfig.selectedCampaigns.includes(campaign.id)}
+                                        onCheckedChange={(checked) => handleCampaignToggle(campaign.id, !!checked)}
+                                      />
+                                      <Users className="w-4 h-4 text-green-600" />
+                                      <div className="flex-1 min-w-0">
+                                        <Label htmlFor={campaign.id} className="text-sm cursor-pointer">
+                                          {campaign.name}
+                                        </Label>
+                                        <p className="text-xs text-muted-foreground">
+                                          {campaign.description}
+                                        </p>
+                                      </div>
+                                      <Badge variant={campaign.status === 'active' ? 'default' : 'secondary'} className="text-xs">
+                                        {campaign.status === 'active' ? 'Ativa' : 'Pausada'}
+                                      </Badge>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

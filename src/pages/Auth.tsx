@@ -103,9 +103,7 @@ const Auth = () => {
       <div className="w-full lg:w-1/2 flex items-center justify-center p-6 relative z-10 backdrop-blur-sm bg-background/5 border-l border-white/5 shadow-2xl">
         <div className="w-full max-w-md space-y-6">
           <div className="text-center space-y-2">
-            <div className="lg:hidden w-12 h-12 bg-white/10 rounded-lg flex items-center justify-center mx-auto mb-4 border border-white/20">
-              
-            </div>
+            
             <img src="/lovable-uploads/34701aad-d67f-460e-9f6a-5c12858d6725.png" alt="HYPR Tracking" className="h-8 object-contain" />
             <p className="text-sm text-white/80">
               Acesse sua conta para gerenciar campanhas

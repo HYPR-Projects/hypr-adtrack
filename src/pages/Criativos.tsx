@@ -114,14 +114,14 @@ const CreateCriativoDialog = ({
           Novo Criativo
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Criar Novo Criativo</DialogTitle>
           <DialogDescription>
             Crie um novo criativo. Você poderá adicionar tags de tracking após a criação.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3">
           <div className="space-y-2">
             <Label htmlFor="name">Nome do Criativo *</Label>
             <Input
@@ -172,7 +172,7 @@ const CreateCriativoDialog = ({
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o grupo de campanha" />
                 </SelectTrigger>
-                <SelectContent className="bg-background border shadow-md">
+                <SelectContent className="bg-background border shadow-md z-50">
                   {campaignGroups.map((group) => (
                     <SelectItem key={group.id} value={group.id}>
                       {group.name}
@@ -191,7 +191,7 @@ const CreateCriativoDialog = ({
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o insertion order (opcional)" />
                 </SelectTrigger>
-                <SelectContent className="bg-background border shadow-md">
+                <SelectContent className="bg-background border shadow-md z-50">
                   {insertionOrders.map((io) => (
                     <SelectItem key={io.id} value={io.id}>
                       {io.client_name}
@@ -208,7 +208,7 @@ const CreateCriativoDialog = ({
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o formato IAB" />
               </SelectTrigger>
-              <SelectContent className="bg-background border shadow-md">
+              <SelectContent className="bg-background border shadow-md z-50">
                 {IAB_FORMATS.map((format) => (
                   <SelectItem key={format.value} value={format.value}>
                     {format.label}

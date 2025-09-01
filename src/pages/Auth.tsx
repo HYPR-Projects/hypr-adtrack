@@ -71,13 +71,17 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen relative flex">
-      {/* Background image covering full screen */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat" 
-        style={{backgroundImage: "url('/lovable-uploads/d177fad6-08ba-4f61-b459-0f35fe3e81f4.png')"}}
-      >
-        <div className="absolute inset-0 bg-black/30"></div>
-      </div>
+      {/* Background image covering full screen - optimized loading */}
+      <img 
+        src="/lovable-uploads/d177fad6-08ba-4f61-b459-0f35fe3e81f4.png"
+        alt="Background"
+        className="absolute inset-0 w-full h-full object-cover"
+        loading="eager"
+        decoding="async"
+        fetchPriority="high"
+        sizes="100vw"
+      />
+      <div className="absolute inset-0 bg-black/30"></div>
 
       {/* Left side - Branding */}
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-center items-center p-12 relative z-10">

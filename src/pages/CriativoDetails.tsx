@@ -711,12 +711,6 @@ const CampaignDetails = () => {
                             TTD
                           </Button>
                         </div>
-                        <div className="text-xs text-muted-foreground mt-2 p-3 bg-muted/30 rounded-lg">
-                          <div className="font-medium mb-1">💡 Implementação:</div>
-                          <div>• <strong>Universal URLs</strong>: Inclui cachebusters de múltiplas DSPs para máxima cobertura</div>
-                          <div>• <strong>DSPs Específicas</strong>: URLs otimizadas para cada plataforma (DV360, Xandr, TTD)</div>
-                          <div>• <strong>Health Check</strong>: Use /health para verificar se a function está funcionando</div>
-                        </div>
                     </div>
                   </div>
                 ))}

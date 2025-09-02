@@ -710,24 +710,6 @@ const CampaignDetails = () => {
                            <Copy className="w-3 h-3 mr-2" />
                            Combo IMG
                          </Button>
-                         <Button
-                           variant="outline"
-                           size="sm"
-                           onClick={() => copyToClipboard(getPixelUrl(tag.code, 'test', 'path'), `Path Test URL (${tag.title})`)}
-                           className="justify-start text-xs h-8"
-                         >
-                           <Copy className="w-3 h-3 mr-2" />
-                           Test URL
-                         </Button>
-                         <Button
-                           variant="outline"
-                           size="sm"
-                           onClick={() => testPixelUrl(getPixelUrl(tag.code, 'test', 'path'), tag.title)}
-                           className="justify-start text-xs h-8"
-                         >
-                           <Activity className="w-3 h-3 mr-2" />
-                           Testar
-                         </Button>
                        </div>
                        <Separator className="my-3" />
                        <div className="text-sm font-medium text-foreground mb-2">DSPs Específicas (Path Format):</div>

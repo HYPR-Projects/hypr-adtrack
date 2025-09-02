@@ -137,17 +137,17 @@ export const InsertionOrderCard = memo(({ insertionOrder, onEdit, onDelete }: In
         <div className="space-y-2 md:space-y-3">
           {/* Métricas responsivas - stack no mobile, grid no desktop */}
           <div className="flex flex-col sm:grid sm:grid-cols-3 gap-1.5 md:gap-2">
-            <div className="flex justify-between items-center sm:flex-col sm:text-center p-1.5 md:p-2 bg-muted/50 rounded border">
+            <div className="flex justify-between items-center sm:flex-col sm:text-center p-1.5 md:p-2 bg-background rounded border">
               <div className="sm:hidden text-xs text-muted-foreground">Criativos</div>
               <div className="text-sm md:text-base font-semibold">{insertionOrder.campaigns_count}</div>
               <div className="hidden sm:block text-xs text-muted-foreground">Criativos</div>
             </div>
-            <div className="flex justify-between items-center sm:flex-col sm:text-center p-1.5 md:p-2 bg-muted/50 rounded border">
+            <div className="flex justify-between items-center sm:flex-col sm:text-center p-1.5 md:p-2 bg-background rounded border">
               <div className="sm:hidden text-xs text-muted-foreground">Tags</div>
               <div className="text-sm md:text-base font-semibold">{insertionOrder.total_tags}</div>
               <div className="hidden sm:block text-xs text-muted-foreground">Tags</div>
             </div>
-            <div className="flex justify-between items-center sm:flex-col sm:text-center p-1.5 md:p-2 bg-muted/50 rounded border">
+            <div className="flex justify-between items-center sm:flex-col sm:text-center p-1.5 md:p-2 bg-background rounded border">
               <div className="sm:hidden text-xs text-muted-foreground">Clicks</div>
               <div className="text-sm md:text-base font-semibold">{insertionOrder.total_clicks}</div>
               <div className="hidden sm:block text-xs text-muted-foreground">Clicks</div>

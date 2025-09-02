@@ -272,60 +272,29 @@ const CampaignDetails = () => {
 
   const PROJECT_DOMAIN = 'wmwpzmpgaokjplhyyktv.supabase.co';
 
-  const getPixelUrl = (tag: string, dspType: 'dv360' | 'xandr' | 'ttd' | 'combo' | 'js' | 'test', format: 'path' | 'query' = 'path') => {
-    const baseUrl = format === 'path' 
-      ? `https://${PROJECT_DOMAIN}/functions/v1/track-event/${tag}`
-      : `https://${PROJECT_DOMAIN}/functions/v1/track-event?tag=${tag}`;
+  const getPixelUrl = (tag: string, dspType: 'dv360' | 'xandr' | 'ttd' | 'combo') => {
+    const baseUrl = `https://${PROJECT_DOMAIN}/functions/v1/track-event/${tag}`;
     
     switch (dspType) {
       case 'dv360':
-        return `${baseUrl}${format === 'path' ? '?' : '&'}cb=%%CACHEBUSTER%%`;
+        return `${baseUrl}&cb={dclid}&cb2=%25%25PATTERN:DV360_CLK_ID%25%25&cb3=%25%25PATTERN:DV360_UNIQUE_ID%25%25`;
       case 'xandr':
-        return `${baseUrl}${format === 'path' ? '?' : '&'}cb=\${CB}`;
+        return `${baseUrl}&cb={click_id}&cb2={external_data}&cb3={adv_id}`;
       case 'ttd':
-        return `${baseUrl}${format === 'path' ? '?' : '&'}cb=[timestamp]`;
+        return `${baseUrl}&cb={click_id}&cb2={auction_id}&cb3={adgroup_id}`;
       case 'combo':
-        return `${baseUrl}${format === 'path' ? '?' : '&'}cb=${encodeURIComponent('%%CACHEBUSTER%%-${CB}-[timestamp]')}`;
-      case 'js':
-        return `${baseUrl}${format === 'path' ? '?' : '&'}cb=\${Date.now()}`;
-      case 'test':
-        return `${baseUrl}${format === 'path' ? '?' : '&'}cb=${Date.now()}`;
+        return `${baseUrl}&cb={dclid}&cb2=%25%25PATTERN:DV360_CLK_ID%25%25&cb3={click_id}&cb4={external_data}&cb5={auction_id}`;
       default:
-        return `${baseUrl}${format === 'path' ? '?' : '&'}cb=%%CACHEBUSTER%%`;
-    }
-  };
-
-  const testPixelUrl = async (url: string, tagTitle: string) => {
-    try {
-      const response = await fetch(url, { method: 'GET', mode: 'no-cors' });
-      toast({
-        title: "Teste realizado",
-        description: `Tag "${tagTitle}" testada com sucesso. Verifique os logs em tempo real.`,
-      });
-    } catch (error) {
-      toast({
-        title: "Erro no teste",
-        description: `Falha ao testar a tag "${tagTitle}".`,
-        variant: "destructive"
-      });
+        return baseUrl;
     }
   };
 
 
 
-  const getImgTag = (tag: string, dspType: 'dv360' | 'xandr' | 'ttd' | 'combo' | 'test', format: 'path' | 'query' = 'path') => {
-    const pixelUrl = getPixelUrl(tag, dspType, format);
+  const getImgTag = (tag: string, dspType: 'dv360' | 'xandr' | 'ttd' | 'combo') => {
+    const pixelUrl = getPixelUrl(tag, dspType);
     return `<img src="${pixelUrl}" width="1" height="1" style="display:none" />`;
   };
-
-  const getJsSnippet = (tag: string) => 
-    `fetch("https://${PROJECT_DOMAIN}/functions/v1/track-event/${tag}?cb=" + Date.now(), {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    metadata: { ua: navigator.userAgent, timestamp: Date.now() }
-  })
-}).catch(err => console.log('Tracking error:', err))`;
 
   const addTag = async (title: string, type: 'click-button' | 'pin' | 'page-view') => {
     const result = await createTag({
@@ -691,110 +660,63 @@ const CampaignDetails = () => {
                           <div className="text-sm font-medium text-foreground">🔗 Formato Path (Recomendado - DSPs):</div>
                           
                         </div>
-                       <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 mb-3">
-                         <Button
-                           variant="outline"
-                           size="sm"
-                           onClick={() => copyToClipboard(getPixelUrl(tag.code, 'combo', 'path'), `Path Combo URL (${tag.title})`)}
-                           className="justify-start text-xs h-8"
-                         >
-                           <Copy className="w-3 h-3 mr-2" />
-                           Combo URL
-                         </Button>
-                         <Button
-                           variant="outline"
-                           size="sm"
-                           onClick={() => copyToClipboard(getImgTag(tag.code, 'combo', 'path'), `Path Combo IMG (${tag.title})`)}
-                           className="justify-start text-xs h-8"
-                         >
-                           <Copy className="w-3 h-3 mr-2" />
-                           Combo IMG
-                         </Button>
-                       </div>
-                       <Separator className="my-3" />
-                       <div className="text-sm font-medium text-foreground mb-2">DSPs Específicas (Path Format):</div>
-                       <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5 mb-3">
-                         <Button
-                           variant="outline"
-                           size="sm"
-                           onClick={() => copyToClipboard(getPixelUrl(tag.code, 'dv360', 'path'), `DV360 Path URL (${tag.title})`)}
-                           className="justify-start text-xs h-8"
-                         >
-                           <Copy className="w-3 h-3 mr-2" />
-                           DV360
-                         </Button>
-                         <Button
-                           variant="outline"
-                           size="sm"
-                           onClick={() => copyToClipboard(getPixelUrl(tag.code, 'xandr', 'path'), `Xandr Path URL (${tag.title})`)}
-                           className="justify-start text-xs h-8"
-                         >
-                           <Copy className="w-3 h-3 mr-2" />
-                           Xandr
-                         </Button>
-                         <Button
-                           variant="outline"
-                           size="sm"
-                           onClick={() => copyToClipboard(getPixelUrl(tag.code, 'ttd', 'path'), `TTD Path URL (${tag.title})`)}
-                           className="justify-start text-xs h-8"
-                         >
-                           <Copy className="w-3 h-3 mr-2" />
-                           TTD
-                         </Button>
-                       </div>
-                       <Separator className="my-3" />
-                       <div className="text-sm font-medium text-foreground mb-2">🔗 Formato Query (Compatibilidade):</div>
-                       <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5 mb-3">
-                         <Button
-                           variant="outline"
-                           size="sm"
-                           onClick={() => copyToClipboard(getPixelUrl(tag.code, 'dv360', 'query'), `DV360 Query URL (${tag.title})`)}
-                           className="justify-start text-xs h-8"
-                         >
-                           <Copy className="w-3 h-3 mr-2" />
-                           DV360 (query)
-                         </Button>
-                         <Button
-                           variant="outline"
-                           size="sm"
-                           onClick={() => copyToClipboard(getPixelUrl(tag.code, 'xandr', 'query'), `Xandr Query URL (${tag.title})`)}
-                           className="justify-start text-xs h-8"
-                         >
-                           <Copy className="w-3 h-3 mr-2" />
-                           Xandr (query)
-                         </Button>
-                         <Button
-                           variant="outline"
-                           size="sm"
-                           onClick={() => copyToClipboard(getPixelUrl(tag.code, 'ttd', 'query'), `TTD Query URL (${tag.title})`)}
-                           className="justify-start text-xs h-8"
-                         >
-                           <Copy className="w-3 h-3 mr-2" />
-                           TTD (query)
-                         </Button>
-                       </div>
-                      <Separator className="my-3" />
-                      <div className="text-sm font-medium text-foreground mb-2">Fallback JavaScript:</div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => copyToClipboard(getJsSnippet(tag.code), `JS Snippet (${tag.title})`)}
-                        className="justify-start text-xs h-8 w-full"
-                      >
-                        <Copy className="w-3 h-3 mr-2" />
-                        Copiar JS Snippet (Para iframes)
-                      </Button>
-                       <div className="text-xs text-muted-foreground mt-2 p-3 bg-muted/30 rounded-lg">
-                         <div className="font-medium mb-1">💡 Implementação Robusta:</div>
-                         <div>• <strong>Path Format</strong>: Tag na URL (/track-event/TAG), resistente a remoção de query strings pelas DSPs</div>
-                         <div>• <strong>Query Format</strong>: Tag como parâmetro (?tag=TAG), formato tradicional para compatibilidade</div>
-                         <div>• <strong>Combo URLs</strong>: Inclui cachebusters de múltiplas DSPs para máxima cobertura</div>
-                         <div>• <strong>Health Check</strong>: Use /health para verificar se a function está funcionando</div>
-                         <div className="mt-2 pt-2 border-t border-muted-foreground/20">
-                           <div className="font-medium">🎯 Recomendação para DSPs:</div>
-                           <div>Use o <strong>Path Format</strong> para DV360/Xandr. Se houver problemas, teste com Query Format.</div>
-                         </div>
-                       </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 mb-3">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => copyToClipboard(getPixelUrl(tag.code, 'combo'), `Combo URL (${tag.title})`)}
+                            className="justify-start text-xs h-8"
+                          >
+                            <Copy className="w-3 h-3 mr-2" />
+                            Combo URL
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => copyToClipboard(getImgTag(tag.code, 'combo'), `Combo IMG (${tag.title})`)}
+                            className="justify-start text-xs h-8"
+                          >
+                            <Copy className="w-3 h-3 mr-2" />
+                            Combo IMG
+                          </Button>
+                        </div>
+                        <Separator className="my-3" />
+                        <div className="text-sm font-medium text-foreground mb-2">DSPs Específicas:</div>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5 mb-3">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => copyToClipboard(getPixelUrl(tag.code, 'dv360'), `DV360 URL (${tag.title})`)}
+                            className="justify-start text-xs h-8"
+                          >
+                            <Copy className="w-3 h-3 mr-2" />
+                            DV360
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => copyToClipboard(getPixelUrl(tag.code, 'xandr'), `Xandr URL (${tag.title})`)}
+                            className="justify-start text-xs h-8"
+                          >
+                            <Copy className="w-3 h-3 mr-2" />
+                            Xandr
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => copyToClipboard(getPixelUrl(tag.code, 'ttd'), `TTD URL (${tag.title})`)}
+                            className="justify-start text-xs h-8"
+                          >
+                            <Copy className="w-3 h-3 mr-2" />
+                            TTD
+                          </Button>
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-2 p-3 bg-muted/30 rounded-lg">
+                          <div className="font-medium mb-1">💡 Implementação:</div>
+                          <div>• <strong>Combo URLs</strong>: Inclui cachebusters de múltiplas DSPs para máxima cobertura</div>
+                          <div>• <strong>DSPs Específicas</strong>: URLs otimizadas para cada plataforma (DV360, Xandr, TTD)</div>
+                          <div>• <strong>Health Check</strong>: Use /health para verificar se a function está funcionando</div>
+                        </div>
                     </div>
                   </div>
                 ))}

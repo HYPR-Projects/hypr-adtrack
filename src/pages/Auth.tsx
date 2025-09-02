@@ -117,7 +117,7 @@ const Auth = () => {
       {/* Right side - Auth Forms with Glass Effect */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-6 relative z-10 backdrop-blur-sm bg-background/5 border-l border-white/5 shadow-2xl">
         <div className="w-full max-w-md space-y-6">
-          <div className="text-center space-y-2">
+          <div className="text-center space-y-2 lg:hidden">
             
             <img src="/lovable-uploads/34701aad-d67f-460e-9f6a-5c12858d6725.png" alt="HYPR Tracking" className="h-8 object-contain mx-auto" />
             <p className="text-sm text-white/80">

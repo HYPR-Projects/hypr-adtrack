@@ -153,7 +153,7 @@ const Campanhas = () => {
           </section>
 
         {/* Filters Section - optimized */}
-        <section className="p-3 md:p-4 bg-muted/30 rounded-lg border mb-4 md:mb-6">
+        <section className="p-3 md:p-4 section-surface rounded-lg border mb-4 md:mb-6">
             <div className="space-y-3 md:space-y-4">
               {/* Search and Filters - improved responsive layout */}
               <div className="flex flex-col sm:flex-row gap-2 md:gap-3">

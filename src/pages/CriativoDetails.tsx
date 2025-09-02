@@ -549,7 +549,7 @@ const CampaignDetails = () => {
 
         {/* Real-time stats widget */}
         {Object.keys(realtimeStats).length > 0 && (
-          <Card className="border shadow-sm mb-6">
+          <Card className="border shadow-sm mb-6 section-surface">
             <CardHeader>
               <div className="flex justify-between items-center">
                 <CardTitle className="text-lg flex items-center gap-2">
@@ -614,7 +614,7 @@ const CampaignDetails = () => {
           </Card>
         )}
 
-        <Card className="border shadow-sm mb-6">
+        <Card className="border shadow-sm mb-6 section-surface">
           <CardHeader>
             <div className="flex justify-between items-start">
               <div>
@@ -832,7 +832,7 @@ const CampaignDetails = () => {
         </Card>
 
 
-        <Card className="border shadow-sm">
+        <Card className="border shadow-sm section-surface">
           <CardHeader>
             <div className="flex justify-between items-center">
               <div>

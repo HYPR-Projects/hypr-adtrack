@@ -264,7 +264,7 @@ const InsertionOrders = () => {
           </div>
 
         {/* Filters Section */}
-        <div className="p-4 bg-muted/30 rounded-lg border mb-6">
+        <div className="p-4 section-surface rounded-lg border mb-6">
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row gap-3">
                 <div className="relative flex-1 max-w-sm">

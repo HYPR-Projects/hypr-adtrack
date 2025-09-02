@@ -204,4 +204,9 @@ All colors MUST be HSL.
   .focus-visible-ring {
     @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
   }
+
+  /* Section surface for main content blocks */
+  .section-surface {
+    @apply bg-neutral-200 dark:bg-neutral-800/30;
+  }
 }

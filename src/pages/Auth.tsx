@@ -35,7 +35,7 @@ const Auth = () => {
       error
     } = await signIn(email, password);
     if (error) {
-      setError(error.message || 'Erro ao fazer login');
+      setError('Não foi possível entrar. Verifique suas credenciais.');
     }
     setLoading(false);
   };
@@ -61,7 +61,7 @@ const Auth = () => {
       error
     } = await signUp(email, password);
     if (error) {
-      setError(error.message || 'Erro ao criar conta');
+      setError('Não foi possível criar a conta. Tente novamente.');
     }
     setLoading(false);
   };
@@ -71,36 +71,20 @@ const Auth = () => {
       return;
     }
 
-    const redirectTarget = `${window.location.origin}/reset-password`;
-    
-    // Warn if using localhost
-    if (window.location.origin.includes('localhost')) {
-      const proceed = confirm(
-        `⚠️ ATENÇÃO: Você está usando localhost!\n\n` +
-        `O link será enviado para: ${redirectTarget}\n\n` +
-        `Este link só funcionará se você estiver acessando via localhost.\n` +
-        `Para produção, configure as URLs no Supabase Authentication > URL Configuration.\n\n` +
-        `Deseja continuar?`
-      );
-      if (!proceed) return;
-    }
-
     setError(null);
     setLoading(true);
     try {
-      const {
-        error
-      } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: redirectTarget
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`
       });
       if (error) {
-        setError(error.message || 'Erro ao enviar email de redefinição');
+        setError('Não foi possível enviar o email de redefinição');
       } else {
         setResetSent(true);
         setError(null);
       }
     } catch (err) {
-      setError('Erro ao enviar email de redefinição');
+      setError('Não foi possível enviar o email de redefinição');
     }
     setLoading(false);
   };
@@ -163,17 +147,11 @@ const Auth = () => {
                     </Button>
                   </form>
                   
-                  {resetSent ? <div className="text-center p-4 bg-green-500/20 border border-green-500/30 rounded-lg space-y-2">
+                  {resetSent ? <div className="text-center p-4 bg-green-500/20 border border-green-500/30 rounded-lg">
                       <p className="text-sm text-green-100">
                         Email de redefinição de senha enviado! Verifique sua caixa de entrada.
                       </p>
-                      <p className="text-xs text-green-200/80">
-                        O link abrirá: {`${window.location.origin}/reset-password`}
-                      </p>
-                    </div> : <div className="text-center space-y-2">
-                      <p className="text-xs text-white/60">
-                        Link será enviado para: {`${window.location.origin}/reset-password`}
-                      </p>
+                    </div> : <div className="text-center">
                       <button type="button" onClick={() => {
                     const emailInput = document.getElementById('signin-email') as HTMLInputElement;
                     const email = emailInput?.value;
@@ -221,9 +199,6 @@ const Auth = () => {
             <Separator className="mb-4 bg-white/20" />
             <p className="text-xs text-white/70">
               Apenas colaboradores HYPR com email @hypr.mobi podem acessar o sistema
-            </p>
-            <p className="text-xs text-white/50">
-              💡 Configure as URLs no Supabase Authentication → URL Configuration para funcionar em produção
             </p>
           </div>
         </div>

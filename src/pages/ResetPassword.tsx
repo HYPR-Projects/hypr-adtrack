@@ -119,19 +119,6 @@ const ResetPassword = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="bg-muted p-4 rounded-lg space-y-2">
-              <p className="text-sm font-medium">Domínio atual:</p>
-              <p className="text-xs font-mono bg-muted-foreground/10 p-2 rounded">
-                {window.location.origin}
-              </p>
-              <p className="text-sm font-medium">Possíveis soluções:</p>
-              <ul className="text-sm space-y-1 list-disc pl-4">
-                <li>Configure as URLs no Supabase Authentication → URL Configuration</li>
-                <li>Adicione <code className="bg-muted-foreground/10 px-1 rounded">{window.location.origin}/reset-password</code> nas Redirect URLs</li>
-                <li>Certifique-se de que está acessando pelo domínio correto</li>
-                <li>Solicite um novo email de redefinição pela produção</li>
-              </ul>
-            </div>
             <Button 
               onClick={() => navigate('/auth')} 
               className="w-full"

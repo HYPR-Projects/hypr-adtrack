@@ -16,10 +16,10 @@ const AuthCallback = () => {
 
     if (error) {
       setStatus('error');
-      setMessage(errorDescription || 'Erro ao confirmar a conta');
+      setMessage('Houve um problema ao confirmar sua conta. Tente novamente.');
     } else {
       setStatus('success');
-      setMessage('Conta confirmada com sucesso!');
+      setMessage('Conta confirmada com sucesso! Redirecionando...');
     }
 
     // Redirect after 2 seconds

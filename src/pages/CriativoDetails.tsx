@@ -7,11 +7,9 @@ import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Breadcrumb, useBreadcrumbs } from "@/components/Breadcrumb";
 import { UserMenu } from "@/components/UserMenu";
-import { ArrowLeft, Copy, MousePointer, Eye, Calendar, TrendingUp, Download, Tag as TagIcon, Trash2, User, Activity, Settings, BarChart3, RefreshCcw } from "lucide-react";
+import { ArrowLeft, Copy, MousePointer, Eye, Calendar, TrendingUp, Download, Tag as TagIcon, Trash2, User, Activity, Settings, BarChart3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import AddTagDialog from "@/components/AddTagDialog";
 import { EditCampaignDialog } from "@/components/EditCampaignDialog";
@@ -26,15 +24,6 @@ interface DailyMetric {
   page_views: number;
 }
 
-interface RealtimeEvent {
-  id: string;
-  event_type: string;
-  tag_id: string;
-  ip_address: string | null;
-  user_agent: string | null;
-  created_at: string;
-  metadata: any;
-}
 
 // Função utilitária para classificar eventos baseado no tipo da tag
 const classifyEventByTagType = (event: any, tagType: string) => {
@@ -89,15 +78,7 @@ const CampaignDetails = () => {
   const [realtimeStats, setRealtimeStats] = useState<any>({});
   const [isLoadingStats, setIsLoadingStats] = useState(false);
   
-  // Real-time log states
-  const [realtimeLogs, setRealtimeLogs] = useState<RealtimeEvent[]>([]);
-  const [filterType, setFilterType] = useState<string>('click');
-  const [filterTagId, setFilterTagId] = useState<string>('all');
-  const [eventCount, setEventCount] = useState(0);
-  const [includePageViews, setIncludePageViews] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [isReloading, setIsReloading] = useState(false);
-  const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
   
   const campaign = campaigns.find(c => c.id === id);
   const currentInsertionOrder = useMemo(() => {
@@ -252,115 +233,6 @@ const CampaignDetails = () => {
     fetchDailyMetrics();
   }, [campaign, toast]);
 
-  // Refresh logs functionality
-  const refreshLogs = async () => {
-    setIsReloading(true);
-    await loadInitialLogs();
-    setLastUpdatedAt(new Date().toLocaleTimeString('pt-BR', { hour12: false }));
-    setIsReloading(false);
-  };
-
-  // Real-time logs functionality
-  const loadInitialLogs = async () => {
-    if (!campaign) return;
-    
-    const tagIds = campaign.tags.map(tag => tag.id);
-    if (tagIds.length === 0) return;
-
-    try {
-      // Always load the last 50 events for this campaign
-      const { data: events, error } = await supabase
-        .from('events')
-        .select('id, tag_id, event_type, ip_address, user_agent, metadata, created_at')
-        .in('tag_id', tagIds)
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      if (error) throw error;
-      setRealtimeLogs((events || []) as RealtimeEvent[]);
-      setEventCount(events?.length || 0);
-    } catch (error) {
-      console.error('Error loading initial logs:', error);
-    }
-  };
-
-
-  const clearLogs = () => {
-    setRealtimeLogs([]);
-    setEventCount(0);
-    setLastUpdatedAt(null);
-  };
-
-  const getTagInfo = (tagId: string) => {
-    const tag = campaign?.tags.find(t => t.id === tagId);
-    return tag ? { title: tag.title, code: tag.code, type: tag.type } : null;
-  };
-
-  const getEventTypeBadge = (eventType: string) => {
-    const variants = {
-      'click': 'bg-blue-50 text-blue-700 border-blue-200',
-      'click_button': 'bg-blue-50 text-blue-700 border-blue-200',
-      'cta_click': 'bg-blue-50 text-blue-700 border-blue-200',
-      'page_view': 'bg-purple-50 text-purple-700 border-purple-200',
-      'pin_click': 'bg-green-50 text-green-700 border-green-200',
-      'view': 'bg-green-50 text-green-700 border-green-200',
-      'map_pin': 'bg-green-50 text-green-700 border-green-200'
-    };
-    
-    return variants[eventType as keyof typeof variants] || 'bg-gray-50 text-gray-700 border-gray-200';
-  };
-
-  const filteredLogs = realtimeLogs.filter(log => {
-    // Apply include page views filter
-    if (!includePageViews && log.event_type === 'page_view') return false;
-    
-    // Apply other filters
-    if (filterType !== 'all' && log.event_type !== filterType) return false;
-    if (filterTagId !== 'all' && log.tag_id !== filterTagId) return false;
-    return true;
-  });
-
-  useEffect(() => {
-    loadInitialLogs();
-  }, [campaign, includePageViews]);
-
-  // Setup real-time listening for new events
-  useEffect(() => {
-    if (!campaign) return;
-    
-    const tagIds = campaign.tags.map(tag => tag.id);
-    if (tagIds.length === 0) return;
-
-    const channel = supabase
-      .channel('realtime-events')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'events',
-          filter: `tag_id=in.(${tagIds.join(',')})`
-        },
-        (payload) => {
-          console.log('New event received:', payload);
-          const newEvent = payload.new as RealtimeEvent;
-          
-          // Add new event to the beginning and keep only last 50
-          setRealtimeLogs(prev => {
-            const updated = [newEvent, ...prev];
-            return updated.slice(0, 50);
-          });
-          
-          setEventCount(prev => Math.min(prev + 1, 50));
-          setLastUpdatedAt(new Date().toLocaleTimeString('pt-BR', { hour12: false }));
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [campaign]);
 
   // Real-time stats monitoring
   useEffect(() => {
@@ -613,73 +485,6 @@ const CampaignDetails = () => {
             </div>
           </div>
           
-        {/* Real-time stats widget */}
-        {Object.keys(realtimeStats).length > 0 && (
-          <Card className="border shadow-sm mb-6">
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Activity className="w-5 h-5" />
-                  Últimos 15 Minutos
-                   <Badge variant="secondary" className="ml-2">
-                     {String(Object.values(realtimeStats).reduce((acc: number, stat: any) => acc + (stat?.total || 0), 0))} eventos
-                   </Badge>
-                </CardTitle>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => loadRealtimeStats()} 
-                  disabled={isLoadingStats}
-                  className="gap-2"
-                >
-                  <RefreshCcw className={isLoadingStats ? 'w-4 h-4 animate-spin' : 'w-4 h-4'} />
-                  Recarregar
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {Object.values(realtimeStats).map((stat: any) => (
-                  <div key={stat.tag.id} className="border rounded-lg p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="font-medium text-sm">{stat.tag.title}</div>
-                      <Badge 
-                        variant="outline" 
-                        className={
-                          stat.tag.type === 'click-button' ? "bg-blue-50 text-blue-700 border-blue-200" : 
-                          stat.tag.type === 'pin' ? "bg-green-50 text-green-700 border-green-200" :
-                          "bg-purple-50 text-purple-700 border-purple-200"
-                        }
-                      >
-                        {stat.tag.type}
-                      </Badge>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 text-center">
-                      <div>
-                        <div className="text-lg font-semibold text-purple-600">{stat.page_views}</div>
-                        <div className="text-xs text-muted-foreground">Views</div>
-                      </div>
-                      <div>
-                        <div className="text-lg font-semibold text-blue-600">{stat.clicks}</div>
-                        <div className="text-xs text-muted-foreground">Clicks</div>
-                      </div>
-                      <div>
-                        <div className="text-lg font-semibold text-green-600">{stat.pin_clicks}</div>
-                        <div className="text-xs text-muted-foreground">Pins</div>
-                      </div>
-                    </div>
-                    {stat.last_event && (
-                      <div className="text-xs text-muted-foreground text-center mt-2">
-                        Último: {new Date(stat.last_event).toLocaleTimeString('pt-BR', { hour12: false })}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <Card className="border shadow-sm">
             <CardContent className="p-4">
@@ -741,6 +546,73 @@ const CampaignDetails = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Real-time stats widget */}
+        {Object.keys(realtimeStats).length > 0 && (
+          <Card className="border shadow-sm mb-6">
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Activity className="w-5 h-5" />
+                  Últimos 15 Minutos
+                   <Badge variant="secondary" className="ml-2">
+                     {String(Object.values(realtimeStats).reduce((acc: number, stat: any) => acc + (stat?.total || 0), 0))} eventos
+                   </Badge>
+                </CardTitle>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => loadRealtimeStats()} 
+                  disabled={isLoadingStats}
+                  className="gap-2"
+                >
+                  <Activity className={isLoadingStats ? 'w-4 h-4 animate-spin' : 'w-4 h-4'} />
+                  Recarregar
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {Object.values(realtimeStats).map((stat: any) => (
+                  <div key={stat.tag.id} className="border rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="font-medium text-sm">{stat.tag.title}</div>
+                      <Badge 
+                        variant="outline" 
+                        className={
+                          stat.tag.type === 'click-button' ? "bg-blue-50 text-blue-700 border-blue-200" : 
+                          stat.tag.type === 'pin' ? "bg-green-50 text-green-700 border-green-200" :
+                          "bg-purple-50 text-purple-700 border-purple-200"
+                        }
+                      >
+                        {stat.tag.type}
+                      </Badge>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                      <div>
+                        <div className="text-lg font-semibold text-purple-600">{stat.page_views}</div>
+                        <div className="text-xs text-muted-foreground">Views</div>
+                      </div>
+                      <div>
+                        <div className="text-lg font-semibold text-blue-600">{stat.clicks}</div>
+                        <div className="text-xs text-muted-foreground">Clicks</div>
+                      </div>
+                      <div>
+                        <div className="text-lg font-semibold text-green-600">{stat.pin_clicks}</div>
+                        <div className="text-xs text-muted-foreground">Pins</div>
+                      </div>
+                    </div>
+                    {stat.last_event && (
+                      <div className="text-xs text-muted-foreground text-center mt-2">
+                        Último: {new Date(stat.last_event).toLocaleTimeString('pt-BR', { hour12: false })}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Card className="border shadow-sm mb-6">
           <CardHeader>
@@ -959,152 +831,6 @@ const CampaignDetails = () => {
           </CardContent>
         </Card>
 
-        {/* Real-time Log Section */}
-        <Card className="border shadow-sm mb-6">
-          <CardHeader>
-            <div className="flex justify-between items-start">
-              <div>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Activity className="w-5 h-5" />
-                  Real-time Log
-                  {eventCount > 0 && (
-                    <Badge variant="secondary" className="ml-2">
-                      {eventCount} eventos
-                    </Badge>
-                  )}
-                </CardTitle>
-                <CardDescription className="flex items-center justify-between">
-                  <span>Últimos eventos das suas tags</span>
-                  <span className="text-xs">
-                    {lastUpdatedAt ? `Atualizado às ${lastUpdatedAt}` : 'Clique em Atualizar'}
-                  </span>
-                </CardDescription>
-              </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={refreshLogs} 
-                disabled={isReloading}
-                className="gap-2"
-              >
-                <RefreshCcw className={isReloading ? 'w-4 h-4 animate-spin' : 'w-4 h-4'} />
-                Atualizar
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap items-center gap-4 mb-4 p-4 bg-muted/30 rounded-lg">
-              <div className="flex items-center gap-2">
-                <Label htmlFor="page-views-toggle" className="text-sm font-medium">Incluir Page Views</Label>
-                <input
-                  id="page-views-toggle"
-                  type="checkbox"
-                  checked={includePageViews}
-                  onChange={(e) => setIncludePageViews(e.target.checked)}
-                  className="rounded border border-input"
-                />
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <Label className="text-sm font-medium">Tipo:</Label>
-                <Select value={filterType} onValueChange={setFilterType}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="page_view">Page View</SelectItem>
-                    <SelectItem value="click">Click</SelectItem>
-                    <SelectItem value="click_button">Click Button</SelectItem>
-                    <SelectItem value="pin_click">PIN Click</SelectItem>
-                    <SelectItem value="cta_click">CTA Click</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Label className="text-sm font-medium">Tag:</Label>
-                <Select value={filterTagId} onValueChange={setFilterTagId}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas</SelectItem>
-                    {campaign.tags.map(tag => (
-                      <SelectItem key={tag.id} value={tag.id}>
-                        {tag.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={clearLogs}
-                disabled={realtimeLogs.length === 0}
-              >
-                Limpar
-              </Button>
-            </div>
-
-            {filteredLogs.length === 0 ? (
-              <div className="text-center p-8 text-muted-foreground">
-                <Activity className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>Nenhum evento encontrado</p>
-                <p className="text-sm">
-                  Clique em 'Atualizar' para carregar os últimos eventos
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {filteredLogs.map((log) => {
-                  const tagInfo = getTagInfo(log.tag_id);
-                  return (
-                    <div 
-                      key={log.id} 
-                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="text-xs text-muted-foreground font-mono">
-                          {new Date(log.created_at).toLocaleString('pt-BR', { 
-                            hour12: false,
-                            day: '2-digit',
-                            month: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            second: '2-digit'
-                          })}
-                        </div>
-                        <Badge 
-                          variant="outline" 
-                          className={getEventTypeBadge(log.event_type)}
-                        >
-                          {log.event_type}
-                        </Badge>
-                        {tagInfo && (
-                          <div className="text-sm">
-                            <span className="font-medium">{tagInfo.title}</span>
-                            <code className="ml-2 text-xs bg-muted px-1 py-0.5 rounded font-mono">
-                              {tagInfo.code}
-                            </code>
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        <div>IP: {log.ip_address || 'N/A'}</div>
-                        <div className="max-w-48 truncate" title={log.user_agent || 'N/A'}>
-                          UA: {log.user_agent || 'N/A'}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
 
         <Card className="border shadow-sm">
           <CardHeader>

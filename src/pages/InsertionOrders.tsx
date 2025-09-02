@@ -337,7 +337,7 @@ const InsertionOrders = () => {
             <div className="flex justify-between items-center">
               <h2 className="text-lg font-medium">Insertion Orders</h2>
               <Badge variant="outline" className="text-xs">
-                {filteredInsertionOrders.length} ordem{filteredInsertionOrders.length !== 1 ? 'ns' : ''}
+                {filteredInsertionOrders.length} IO's
                 {filteredInsertionOrders.length !== insertionOrders.length && (
                   <span className="text-muted-foreground ml-1">de {insertionOrders.length}</span>
                 )}

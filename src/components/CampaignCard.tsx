@@ -80,7 +80,14 @@ export const CampaignCard = memo(({ campaign }: CampaignCardProps) => {
               <Badge variant={campaign.derivedStatus === 'active' ? 'default' : 'secondary'} className="text-xs shrink-0">
                 {campaign.derivedStatus === 'active' ? 'Ativa' : 'Pausada'}
               </Badge>
-              <Badge variant="outline" className="text-xs shrink-0 bg-muted/50">
+              <Badge 
+                variant="outline" 
+                className={`text-xs shrink-0 ${
+                  campaign.metrics.last_hour > 0 
+                    ? 'bg-green-50 text-green-700 border-green-200' 
+                    : 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                }`}
+              >
                 Últ. hora: {campaign.metrics.last_hour}
               </Badge>
             </div>

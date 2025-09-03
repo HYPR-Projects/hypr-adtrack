@@ -68,7 +68,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
 
       {/* Content with proper spacing - optimized */}
       <main className="pt-3 md:pt-4">
-        <div className="container mx-auto px-3 md:px-4">
+        <div className="container mx-auto px-3 md:px-4 pb-8 md:pb-12 lg:pb-16">
           <div className="space-y-4 md:space-y-5">
             {/* Breadcrumbs */}
             {breadcrumbs && (

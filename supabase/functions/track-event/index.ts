@@ -9,6 +9,10 @@ const corsHeaders = {
 const tagCache = new Map<string, { id: string; type: string; expires: number }>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
 
+// Deduplication cache for page views only (5 second TTL)
+const dedupeCache = new Map<string, number>();
+const DEDUPE_TTL = 5 * 1000; // 5 seconds
+
 // Rate limiting simples por IP (configurável via env vars)
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 const RATE_LIMIT = parseInt(Deno.env.get('TRACK_EVENT_RATE_LIMIT') || '2000'); // requests por minuto por IP
@@ -58,6 +62,33 @@ async function getTagInfo(supabase: any, tagCode: string) {
   return tagInfo;
 }
 
+// Helper functions for deduplication
+function generateDedupeKey(tagId: string, uniqueId: string | null, ip: string, userAgent: string | null, referer: string | null): string {
+  if (uniqueId && uniqueId !== '') {
+    // Use unique_id for precise deduplication (DV360/Xandr/TTD)
+    return `page_view|${tagId}|${uniqueId}`;
+  } else {
+    // Fallback: use ip + user_agent + normalized referer
+    const normalizedReferer = referer ? new URL(referer).hostname : 'none';
+    return `page_view|${tagId}|${ip}|${userAgent || 'none'}|${normalizedReferer}`;
+  }
+}
+
+function checkDedupe(dedupeKey: string): boolean {
+  const now = Date.now();
+  const cached = dedupeCache.get(dedupeKey);
+  
+  if (cached && now < cached + DEDUPE_TTL) {
+    console.log('Dedup hit:', dedupeKey);
+    return true; // Duplicate found
+  }
+  
+  // Add to cache
+  dedupeCache.set(dedupeKey, now);
+  console.log('Dedup miss:', dedupeKey);
+  return false; // Not a duplicate
+}
+
 // Limpeza periódica do cache e rate limiting
 setInterval(() => {
   const now = Date.now();
@@ -73,6 +104,13 @@ setInterval(() => {
   for (const [key, value] of rateLimitMap.entries()) {
     if (now > value.resetTime) {
       rateLimitMap.delete(key);
+    }
+  }
+  
+  // Limpar cache de deduplicação expirado
+  for (const [key, value] of dedupeCache.entries()) {
+    if (now > value + DEDUPE_TTL) {
+      dedupeCache.delete(key);
     }
   }
 }, 60000); // Executar a cada minuto
@@ -258,6 +296,47 @@ Deno.serve(async (req) => {
     
     console.log(`Processing event: tag_type=${tag.type}, mapped_event_type=${eventType}, ip=${ip}`)
 
+    // Check for page view deduplication ONLY
+    if (eventType === 'page_view') {
+      // Extract unique_id from metadata for DV360/Xandr/TTD
+      let uniqueId = metadata.unique_id;
+      if (!uniqueId && metadata.query_params) {
+        uniqueId = metadata.query_params.cb3; // From DV360_UNIQUE_ID, adgroup_id, etc.
+      }
+      
+      const dedupeKey = generateDedupeKey(tag.id, uniqueId, ip, userAgent, metadata.referer);
+      
+      if (checkDedupe(dedupeKey)) {
+        // Duplicate found - return GIF with dedup header
+        console.log(`Duplicate page_view blocked: ${dedupeKey}`);
+        
+        if (req.method === 'GET') {
+          const gifBuffer = Uint8Array.from(atob(GIF_PIXEL), c => c.charCodeAt(0))
+          return new Response(gifBuffer, {
+            headers: {
+              ...corsHeaders,
+              'Content-Type': 'image/gif',
+              'Content-Length': gifBuffer.length.toString(),
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'X-Dedup': 'hit',
+              'X-Debug': 'page-view-duplicate'
+            }
+          })
+        } else {
+          return new Response(
+            JSON.stringify({ success: true, event_type: eventType, deduped: true }),
+            {
+              headers: {
+                ...corsHeaders,
+                'Content-Type': 'application/json',
+                'X-Dedup': 'hit'
+              }
+            }
+          )
+        }
+      }
+    }
+
     // Insert event record
     const eventData = {
       tag_id: tag.id,
@@ -311,7 +390,8 @@ Deno.serve(async (req) => {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           'X-RateLimit-Limit': RATE_LIMIT.toString(),
           'X-RateLimit-Remaining': remaining.toString(),
-          'X-RateLimit-Window': (RATE_WINDOW / 1000).toString()
+          'X-RateLimit-Window': (RATE_WINDOW / 1000).toString(),
+          'X-Dedup': eventType === 'page_view' ? 'miss' : 'none'
         }
       })
     } else {

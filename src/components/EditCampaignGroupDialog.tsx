@@ -108,14 +108,18 @@ export const EditCampaignGroupDialog = ({ campaignGroup, children, open: control
           </Button>
         </DialogTrigger>
       )}
-      <DialogContent className="sm:max-w-[525px]">
+      <DialogContent 
+        className="sm:max-w-[525px]"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>Editar Campanha</DialogTitle>
           <DialogDescription>
             Atualize as informações da campanha.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" onClick={(e) => e.stopPropagation()}>
           <div className="space-y-2">
             <Label htmlFor="name">Nome da Campanha *</Label>
             <Input

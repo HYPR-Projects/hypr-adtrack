@@ -108,9 +108,11 @@ export const useCampaignsQuery = (campaignGroupId?: string) => {
       return campaignsWithMetrics;
     },
     enabled: !!user,
-    staleTime: 30 * 1000, // 30 seconds (reduced from 2 minutes for fresher data)
-    gcTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnMount: 'always', // Always fetch fresh data when component mounts
+    staleTime: 5 * 60 * 1000, // 5 minutes - aggressive caching for better performance
+    gcTime: 15 * 60 * 1000, // 15 minutes
+    refetchOnMount: false, // Don't refetch if cache is still valid
+    refetchOnWindowFocus: false, // Don't refetch when window regains focus
+    refetchInterval: 60 * 1000, // Background refresh every 1 minute
     retry: 2, // Retry twice if request fails
     retryDelay: 1000, // Wait 1 second between retries
   });

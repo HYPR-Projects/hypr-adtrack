@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import AddTagDialog from "@/components/AddTagDialog";
 import { EditCampaignDialog } from "@/components/EditCampaignDialog";
 import { useCampaigns, type Tag } from "@/hooks/useCampaigns";
+import { useCampaignDetailsQuery } from "@/hooks/queries/useCampaignDetailsQuery";
 import { useInsertionOrders } from "@/hooks/useInsertionOrders";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -67,7 +68,8 @@ const calculateCTR = (clicks: number, pageViews: number) => {
 const CampaignDetails = () => {
   const { id } = useParams();
   const { toast } = useToast();
-  const { campaigns, loading, createTag, deleteTag, fetchCampaigns } = useCampaigns();
+  const { createTag, deleteTag } = useCampaigns();
+  const { data: campaign, isLoading: loading } = useCampaignDetailsQuery(id);
   const { insertionOrders } = useInsertionOrders();
   const { generateBreadcrumbs } = useBreadcrumbs();
   const [dailyMetrics, setDailyMetrics] = useState<DailyMetric[]>([]);
@@ -79,8 +81,6 @@ const CampaignDetails = () => {
   const [isLoadingStats, setIsLoadingStats] = useState(false);
   
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  
-  const campaign = campaigns.find(c => c.id === id);
   const currentInsertionOrder = useMemo(() => {
     if (!campaign?.insertion_order_id) return null;
     return insertionOrders.find(io => io.id === campaign.insertion_order_id);
@@ -134,11 +134,6 @@ const CampaignDetails = () => {
     }
   };
 
-  useEffect(() => {
-    if (!loading && campaigns.length === 0) {
-      fetchCampaigns();
-    }
-  }, [loading, campaigns.length, fetchCampaigns]);
 
   useEffect(() => {
     const fetchDailyMetrics = async () => {

@@ -136,7 +136,7 @@ export type Database = {
           created_at: string
           event_type: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           metadata: Json | null
           tag_id: string
           user_agent: string | null
@@ -145,7 +145,7 @@ export type Database = {
           created_at?: string
           event_type: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           metadata?: Json | null
           tag_id: string
           user_agent?: string | null
@@ -154,7 +154,7 @@ export type Database = {
           created_at?: string
           event_type?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           metadata?: Json | null
           tag_id?: string
           user_agent?: string | null
@@ -271,6 +271,13 @@ export type Database = {
             foreignKeyName: "tags_campaign_id_fkey"
             columns: ["campaign_id"]
             isOneToOne: false
+            referencedRelation: "campaign_metrics_summary"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "tags_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
             referencedRelation: "campaigns"
             referencedColumns: ["id"]
           },
@@ -286,6 +293,19 @@ export type Database = {
           page_views: number | null
           pin_clicks: number | null
           total_events: number | null
+        }
+        Relationships: []
+      }
+      campaign_metrics_summary: {
+        Row: {
+          campaign_id: string | null
+          cta_clicks: number | null
+          last_event_at: string | null
+          last_hour: number | null
+          page_views: number | null
+          pin_clicks: number | null
+          total_7d: number | null
+          total_tags: number | null
         }
         Relationships: []
       }
@@ -319,6 +339,13 @@ export type Database = {
             foreignKeyName: "tags_campaign_id_fkey"
             columns: ["campaign_id"]
             isOneToOne: false
+            referencedRelation: "campaign_metrics_summary"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "tags_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
             referencedRelation: "campaigns"
             referencedColumns: ["id"]
           },
@@ -326,10 +353,7 @@ export type Database = {
       }
     }
     Functions: {
-      cleanup_old_events: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      cleanup_old_events: { Args: never; Returns: undefined }
       get_campaign_counters: {
         Args: { campaign_ids: string[] }
         Returns: {
@@ -387,6 +411,7 @@ export type Database = {
         Args: { provided_type: string; tag_id: string }
         Returns: string
       }
+      refresh_campaign_metrics: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

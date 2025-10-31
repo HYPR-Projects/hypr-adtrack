@@ -408,6 +408,21 @@ export type Database = {
           tag_title: string
         }[]
       }
+      get_report_from_materialized_view: {
+        Args: {
+          p_campaign_ids?: string[]
+          p_end_date?: string
+          p_group_by?: string
+          p_start_date?: string
+        }
+        Returns: {
+          campaign_id: string
+          cta_clicks: number
+          page_views: number
+          period_start: string
+          pin_clicks: number
+        }[]
+      }
       normalize_event_type: {
         Args: { provided_type: string; tag_id: string }
         Returns: string

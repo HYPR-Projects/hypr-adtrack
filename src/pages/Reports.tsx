@@ -146,12 +146,20 @@ const Reports = () => {
       );
     }
     
-    // If specific campaigns are selected, use those, otherwise use filtered campaigns
+    // If specific campaigns are selected, use those
     if (reportConfig.selectedCampaigns.length > 0) {
       return reportConfig.selectedCampaigns;
     }
     
-    return filteredCampaigns.map(c => c.id);
+    // Only return campaigns if there's at least one filter applied
+    if (reportConfig.selectedInsertionOrders.length > 0 || 
+        reportConfig.selectedCreatives.length > 0 ||
+        (reportConfig.shortTokenFilter && reportConfig.shortTokenFilter.trim())) {
+      return filteredCampaigns.map(c => c.id);
+    }
+    
+    // Return empty array if no filters applied
+    return [];
   }, [campaigns, reportConfig.selectedCampaigns, reportConfig.selectedInsertionOrders, reportConfig.selectedCreatives]);
 
   // Fetch aggregated report data
@@ -796,6 +804,14 @@ const Reports = () => {
                   </p>
                   <p className="text-xs text-muted-foreground font-mono bg-muted p-2 rounded max-w-md mx-auto">
                     {eventsError}
+                  </p>
+                </div>
+              ) : effectiveCampaignIds.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Filter className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg font-medium mb-2">Nenhum filtro selecionado</p>
+                  <p className="text-sm">
+                    Selecione pelo menos uma Insertion Order, Campanha ou Short Token para visualizar os dados
                   </p>
                 </div>
               ) : reportData.length === 0 ? (

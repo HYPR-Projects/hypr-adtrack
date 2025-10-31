@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useCampaigns } from "@/hooks/useCampaigns";
 import { useInsertionOrders } from "@/hooks/useInsertionOrders";
@@ -101,6 +101,19 @@ const Reports = () => {
     
     return uniqueCreatives;
   }, [campaigns]);
+
+  // Filter campaigns for dropdown based on selected insertion orders
+  const filteredCampaignsForDropdown = useMemo(() => {
+    // Se não há Insertion Orders selecionadas, mostrar todas as campanhas
+    if (reportConfig.selectedInsertionOrders.length === 0) {
+      return campaigns;
+    }
+    
+    // Filtrar campanhas que pertencem às IOs selecionadas
+    return campaigns.filter(campaign => 
+      reportConfig.selectedInsertionOrders.includes(campaign.insertion_order_id)
+    );
+  }, [campaigns, reportConfig.selectedInsertionOrders]);
 
   // Get effective campaign selection based on filters
   const effectiveCampaignIds = useMemo(() => {
@@ -212,6 +225,25 @@ const Reports = () => {
       return row;
     });
   }, [reportEvents, reportConfig]);
+
+  // Clean up invalid campaign selections when IOs change
+  useEffect(() => {
+    if (reportConfig.selectedInsertionOrders.length > 0 && reportConfig.selectedCampaigns.length > 0) {
+      const validCampaignIds = filteredCampaignsForDropdown.map(c => c.id);
+      const invalidSelections = reportConfig.selectedCampaigns.filter(
+        id => !validCampaignIds.includes(id)
+      );
+      
+      if (invalidSelections.length > 0) {
+        setReportConfig(prev => ({
+          ...prev,
+          selectedCampaigns: prev.selectedCampaigns.filter(
+            id => validCampaignIds.includes(id)
+          )
+        }));
+      }
+    }
+  }, [reportConfig.selectedInsertionOrders, filteredCampaignsForDropdown]);
 
   const handleInsertionOrderToggle = (ioId: string, checked: boolean) => {
     setReportConfig(prev => ({
@@ -468,7 +500,7 @@ const Reports = () => {
                   </PopoverTrigger>
                   <PopoverContent className="w-full p-0" align="start">
                     <div className="p-3 space-y-2 max-h-60 overflow-y-auto">
-                      {campaigns.map((campaign) => (
+                      {filteredCampaignsForDropdown.map((campaign) => (
                         <div key={campaign.id} className="flex items-center space-x-2">
                           <Checkbox
                             id={`campaign-${campaign.id}`}

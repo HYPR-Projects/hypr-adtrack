@@ -92,7 +92,23 @@ export const useCampaignsQuery = (campaignGroupId?: string) => {
           last_hour: 0
         };
 
-        const hasRecentActivity = metrics.last_hour > 0;
+        // Lógica de status baseada em datas + atividade recente
+        const now = new Date();
+        const startDate = new Date(campaign.start_date);
+        const endDate = new Date(campaign.end_date);
+        
+        let derivedStatus: 'active' | 'paused' | 'scheduled' | 'expired';
+        
+        if (now < startDate) {
+          // Campanha ainda não começou
+          derivedStatus = 'scheduled';
+        } else if (now > endDate) {
+          // Campanha já finalizou
+          derivedStatus = 'expired';
+        } else {
+          // Campanha no período válido: verificar atividade na última hora
+          derivedStatus = metrics.last_hour > 0 ? 'active' : 'paused';
+        }
 
         return {
           ...campaign,
@@ -101,7 +117,7 @@ export const useCampaignsQuery = (campaignGroupId?: string) => {
           campaign_group: (campaign as any).campaign_groups,
           insertion_order: (campaign as any).insertion_orders,
           metrics,
-          derivedStatus: hasRecentActivity ? 'active' : 'paused'
+          derivedStatus
         } as CampaignWithTags;
       });
 

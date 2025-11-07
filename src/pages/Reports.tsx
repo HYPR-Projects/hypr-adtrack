@@ -160,7 +160,7 @@ const Reports = () => {
     
     // Return empty array if no filters applied
     return [];
-  }, [campaigns, reportConfig.selectedCampaigns, reportConfig.selectedInsertionOrders, reportConfig.selectedCreatives]);
+  }, [campaigns, reportConfig.selectedCampaigns, reportConfig.selectedInsertionOrders, reportConfig.selectedCreatives, reportConfig.shortTokenFilter]);
 
   // Fetch aggregated report data
   const { data: reportEvents, loading: eventsLoading, error: eventsError } = useReportEvents({

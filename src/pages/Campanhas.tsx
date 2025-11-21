@@ -27,6 +27,7 @@ const Campanhas = () => {
   const { generateBreadcrumbs } = useBreadcrumbs();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [insertionOrderFilter, setInsertionOrderFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
   
@@ -36,19 +37,44 @@ const Campanhas = () => {
     return insertionOrders.find(io => io.id === insertionOrderId);
   }, [insertionOrderId, insertionOrders]);
 
-  // Filter campaign groups by insertion order if specified in URL
+  // Get unique insertion orders for filter
+  const uniqueInsertionOrders = useMemo(() => {
+    const ioIds = campaignGroups
+      .map(cg => cg.insertion_order_id)
+      .filter(Boolean)
+      .filter((id, index, arr) => arr.indexOf(id) === index);
+    
+    return ioIds.map(id => {
+      const io = insertionOrders.find(io => io.id === id);
+      return io ? { id, name: io.client_name } : null;
+    }).filter(Boolean) as { id: string; name: string }[];
+  }, [campaignGroups, insertionOrders]);
+
+  // Filter campaign groups by insertion order if specified in URL OR filter
   const relevantCampaignGroups = useMemo(() => {
-    if (!insertionOrderId) return campaignGroups;
-    return campaignGroups.filter(group => group.insertion_order_id === insertionOrderId);
-  }, [campaignGroups, insertionOrderId]);
+    let groups = campaignGroups;
+    
+    // Filter by insertion order from URL (priority)
+    if (insertionOrderId) {
+      groups = groups.filter(group => group.insertion_order_id === insertionOrderId);
+    }
+    // Filter by insertion order from dropdown (only when not in IO context)
+    else if (insertionOrderFilter !== "all") {
+      groups = groups.filter(group => group.insertion_order_id === insertionOrderFilter);
+    }
+    
+    return groups;
+  }, [campaignGroups, insertionOrderId, insertionOrderFilter]);
 
   // Filtered campaign groups based on search and filters
   const filteredCampaignGroups = useMemo(() => {
     return relevantCampaignGroups.filter(group => {
-      // Search filter
+      // Search filter - including IO client name
+      const groupIo = insertionOrders.find(io => io.id === group.insertion_order_id);
       const matchesSearch = 
         group.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (group.description && group.description.toLowerCase().includes(searchTerm.toLowerCase()));
+        (group.description && group.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (groupIo && groupIo.client_name.toLowerCase().includes(searchTerm.toLowerCase()));
       
       // Status filter
       const matchesStatus = 
@@ -57,7 +83,7 @@ const Campanhas = () => {
       
       return matchesSearch && matchesStatus;
     });
-  }, [relevantCampaignGroups, searchTerm, statusFilter]);
+  }, [relevantCampaignGroups, searchTerm, statusFilter, insertionOrders]);
   
   // Pagination logic
   const totalPages = Math.ceil(filteredCampaignGroups.length / itemsPerPage);
@@ -68,7 +94,11 @@ const Campanhas = () => {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter]);
+    // Clear IO filter when entering a specific IO context
+    if (insertionOrderId) {
+      setInsertionOrderFilter("all");
+    }
+  }, [searchTerm, statusFilter, insertionOrderFilter, insertionOrderId]);
   
   const totalCampaignGroups = filteredCampaignGroups.length;
   const activeCampaignGroups = filteredCampaignGroups.filter(g => g.derivedStatus === 'active').length;
@@ -78,6 +108,7 @@ const Campanhas = () => {
   const clearFilters = () => {
     setSearchTerm("");
     setStatusFilter("all");
+    setInsertionOrderFilter("all");
   };
 
   // Generate breadcrumbs based on current context
@@ -183,11 +214,29 @@ const Campanhas = () => {
                   />
                 </div>
 
+                {/* Insertion Order Filter - only show when NOT in IO context */}
+                {!insertionOrderId && uniqueInsertionOrders.length > 0 && (
+                  <Select value={insertionOrderFilter} onValueChange={setInsertionOrderFilter}>
+                    <SelectTrigger className="w-full sm:w-[200px] h-9 md:h-10">
+                      <Building className="w-4 h-4 mr-2 shrink-0" />
+                      <SelectValue placeholder="Insertion Order" />
+                    </SelectTrigger>
+                    <SelectContent className="z-50 bg-background border shadow-md">
+                      <SelectItem value="all">Todas as IOs</SelectItem>
+                      {uniqueInsertionOrders.map((io) => (
+                        <SelectItem key={io.id} value={io.id}>
+                          {io.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-full sm:w-[150px] h-9 md:h-10">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
-                  <SelectContent className="bg-background border shadow-md">
+                  <SelectContent className="z-50 bg-background border shadow-md">
                     <SelectItem value="all">Todos os status</SelectItem>
                     <SelectItem value="active">Ativas</SelectItem>
                     <SelectItem value="paused">Pausadas</SelectItem>
@@ -196,7 +245,7 @@ const Campanhas = () => {
               </div>
               
               {/* Results and clear filters - optimized spacing */}
-              {(searchTerm || statusFilter !== "all") && (
+              {(searchTerm || statusFilter !== "all" || insertionOrderFilter !== "all") && (
                 <div className="flex items-center gap-2">
                   <Badge variant="secondary" className="text-xs">
                     {filteredCampaignGroups.length} resultado{filteredCampaignGroups.length !== 1 ? 's' : ''}

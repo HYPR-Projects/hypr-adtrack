@@ -408,7 +408,7 @@ const Criativos = () => {
       
       return matchesSearch && matchesDateRange && matchesCreator && matchesCampaignGroup && matchesStatus && matchesInsertionOrder;
     });
-  }, [campaigns, relevantCampaigns, deferredSearchTerm, dateRange, creatorFilter, campaignFilter, statusFilter, insertionOrderFilter, insertionOrderId]);
+  }, [campaigns, relevantCampaigns, deferredSearchTerm, dateRange, campaignsWithEvents, creatorFilter, campaignFilter, statusFilter, insertionOrderFilter, insertionOrderId]);
   
   // Pagination logic
   const totalPages = Math.ceil(filteredCampaigns.length / itemsPerPage);

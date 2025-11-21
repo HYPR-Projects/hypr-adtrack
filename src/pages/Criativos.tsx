@@ -262,6 +262,11 @@ const Criativos = () => {
     totalCtaClicks: number;
     totalPinClicks: number;
   } | null>(null);
+  const [campaignMetricsMap, setCampaignMetricsMap] = useState<Map<string, {
+    cta_clicks: number;
+    pin_clicks: number;
+    page_views: number;
+  }>>(new Map());
   const itemsPerPage = 20;
   
   // Get current campaign group if we're in that context
@@ -314,63 +319,89 @@ const Criativos = () => {
     return creators.sort();
   }, [profiles, relevantCampaigns]);
 
-  // Fetch campaigns with events in date range
+  // Fetch campaigns with events in date range and their metrics
   useEffect(() => {
-    const fetchCampaignsWithEvents = async () => {
+    const fetchFilteredData = async () => {
       if (!dateRange?.from) {
         setCampaignsWithEvents([]);
+        setFilteredMetrics(null);
+        setCampaignMetricsMap(new Map());
         return;
       }
 
+      const startDate = startOfDay(dateRange.from);
+      const endDate = endOfDay(dateRange.to || dateRange.from);
+
+      // Get campaigns with events in date range
       const { data, error } = await supabase.rpc('get_campaigns_with_events_in_daterange', {
-        p_start_date: startOfDay(dateRange.from).toISOString(),
-        p_end_date: endOfDay(dateRange.to || dateRange.from).toISOString()
+        p_start_date: startDate.toISOString(),
+        p_end_date: endDate.toISOString()
       });
 
       if (error) {
         console.error('Error fetching campaigns with events:', error);
         setCampaignsWithEvents([]);
-      } else {
-        // Filter only campaigns relevant to current context (campaign group)
-        const relevantIds = relevantCampaigns.map(c => c.id);
-        const filteredIds = data
-          ?.map((row: { campaign_id: string }) => row.campaign_id)
-          .filter((id: string) => relevantIds.includes(id)) || [];
-        setCampaignsWithEvents(filteredIds);
-      }
-    };
-
-    fetchCampaignsWithEvents();
-  }, [dateRange, relevantCampaigns]);
-
-  // Fetch aggregated metrics when date range changes
-  useEffect(() => {
-    const fetchFilteredMetrics = async () => {
-      if (!dateRange?.from || campaignsWithEvents.length === 0) {
+        setCampaignMetricsMap(new Map());
         setFilteredMetrics(null);
         return;
       }
 
-      const { data, error } = await supabase.rpc('get_aggregated_metrics_for_campaigns', {
-        p_campaign_ids: campaignsWithEvents,
-        p_start_date: startOfDay(dateRange.from).toISOString(),
-        p_end_date: endOfDay(dateRange.to || dateRange.from).toISOString()
+      // Filter only campaigns relevant to current context (campaign group)
+      const relevantIds = relevantCampaigns.map(c => c.id);
+      const filteredIds = data
+        ?.map((row: { campaign_id: string }) => row.campaign_id)
+        .filter((id: string) => relevantIds.includes(id)) || [];
+      
+      setCampaignsWithEvents(filteredIds);
+
+      if (filteredIds.length === 0) {
+        setCampaignMetricsMap(new Map());
+        setFilteredMetrics(null);
+        return;
+      }
+
+      // Fetch individual campaign metrics
+      const { data: individualMetrics, error: metricsError } = await supabase.rpc(
+        'get_metrics_by_campaign_and_daterange',
+        {
+          p_campaign_ids: filteredIds,
+          p_start_date: startDate.toISOString(),
+          p_end_date: endDate.toISOString()
+        }
+      );
+
+      if (!metricsError && individualMetrics) {
+        const metricsMap = new Map(
+          individualMetrics.map((m: any) => [
+            m.campaign_id,
+            {
+              cta_clicks: Number(m.cta_clicks) || 0,
+              pin_clicks: Number(m.pin_clicks) || 0,
+              page_views: Number(m.page_views) || 0
+            }
+          ])
+        );
+        setCampaignMetricsMap(metricsMap);
+      }
+
+      // Fetch aggregated metrics
+      const { data: aggData, error: aggError } = await supabase.rpc('get_aggregated_metrics_for_campaigns', {
+        p_campaign_ids: filteredIds,
+        p_start_date: startDate.toISOString(),
+        p_end_date: endDate.toISOString()
       });
 
-      if (error) {
-        console.error('Error fetching filtered metrics:', error);
-        setFilteredMetrics(null);
-      } else if (data && data.length > 0) {
+      if (!aggError && aggData && aggData.length > 0) {
         setFilteredMetrics({
-          totalPageViews: data[0].total_page_views,
-          totalCtaClicks: data[0].total_cta_clicks,
-          totalPinClicks: data[0].total_pin_clicks
+          totalPageViews: aggData[0].total_page_views,
+          totalCtaClicks: aggData[0].total_cta_clicks,
+          totalPinClicks: aggData[0].total_pin_clicks
         });
       }
     };
 
-    fetchFilteredMetrics();
-  }, [dateRange, campaignsWithEvents]);
+    fetchFilteredData();
+  }, [dateRange, relevantCampaigns]);
 
   // Filtered campaigns based on all filters
   const filteredCampaigns = useMemo(() => {
@@ -410,11 +441,32 @@ const Criativos = () => {
     });
   }, [campaigns, relevantCampaigns, deferredSearchTerm, dateRange, campaignsWithEvents, creatorFilter, campaignFilter, statusFilter, insertionOrderFilter, insertionOrderId]);
   
+  // Enrich campaigns with filtered metrics when date range is active
+  const campaignsWithFilteredMetrics = useMemo(() => {
+    return filteredCampaigns.map(campaign => {
+      // If date filter is active AND we have filtered metrics for this campaign
+      if (dateRange?.from && campaignMetricsMap.has(campaign.id)) {
+        const filteredMetrics = campaignMetricsMap.get(campaign.id)!;
+        return {
+          ...campaign,
+          metrics: {
+            ...campaign.metrics,
+            cta_clicks: filteredMetrics.cta_clicks,
+            pin_clicks: filteredMetrics.pin_clicks,
+            page_views: filteredMetrics.page_views
+          }
+        };
+      }
+      // No date filter, use historical metrics
+      return campaign;
+    });
+  }, [filteredCampaigns, campaignMetricsMap, dateRange]);
+  
   // Pagination logic
-  const totalPages = Math.ceil(filteredCampaigns.length / itemsPerPage);
+  const totalPages = Math.ceil(campaignsWithFilteredMetrics.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedCampaigns = filteredCampaigns.slice(startIndex, endIndex);
+  const paginatedCampaigns = campaignsWithFilteredMetrics.slice(startIndex, endIndex);
 
   // Reset to page 1 when filters change
   useEffect(() => {

@@ -355,6 +355,18 @@ export type Database = {
     }
     Functions: {
       cleanup_old_events: { Args: never; Returns: undefined }
+      get_aggregated_metrics_for_campaigns: {
+        Args: {
+          p_campaign_ids: string[]
+          p_end_date: string
+          p_start_date: string
+        }
+        Returns: {
+          total_cta_clicks: number
+          total_page_views: number
+          total_pin_clicks: number
+        }[]
+      }
       get_campaign_counters: {
         Args: { campaign_ids: string[] }
         Returns: {

@@ -257,6 +257,11 @@ const Criativos = () => {
   const [insertionOrderFilter, setInsertionOrderFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [campaignsWithEvents, setCampaignsWithEvents] = useState<string[]>([]);
+  const [filteredMetrics, setFilteredMetrics] = useState<{
+    totalPageViews: number;
+    totalCtaClicks: number;
+    totalPinClicks: number;
+  } | null>(null);
   const itemsPerPage = 20;
   
   // Get current campaign group if we're in that context
@@ -338,6 +343,34 @@ const Criativos = () => {
     fetchCampaignsWithEvents();
   }, [dateRange, relevantCampaigns]);
 
+  // Fetch aggregated metrics when date range changes
+  useEffect(() => {
+    const fetchFilteredMetrics = async () => {
+      if (!dateRange?.from || campaignsWithEvents.length === 0) {
+        setFilteredMetrics(null);
+        return;
+      }
+
+      const { data, error } = await supabase.rpc('get_aggregated_metrics_for_campaigns', {
+        p_campaign_ids: campaignsWithEvents,
+        p_start_date: startOfDay(dateRange.from).toISOString(),
+        p_end_date: endOfDay(dateRange.to || dateRange.from).toISOString()
+      });
+
+      if (error) {
+        console.error('Error fetching filtered metrics:', error);
+        setFilteredMetrics(null);
+      } else if (data && data.length > 0) {
+        setFilteredMetrics({
+          totalPageViews: data[0].total_page_views,
+          totalCtaClicks: data[0].total_cta_clicks,
+          totalPinClicks: data[0].total_pin_clicks
+        });
+      }
+    };
+
+    fetchFilteredMetrics();
+  }, [dateRange, campaignsWithEvents]);
 
   // Filtered campaigns based on all filters
   const filteredCampaigns = useMemo(() => {
@@ -390,10 +423,21 @@ const Criativos = () => {
   
   const totalCampaigns = filteredCampaigns.length;
   const activeCampaigns = filteredCampaigns.filter(c => c.derivedStatus === 'active').length;
-  const totalClicks = filteredCampaigns.reduce((sum, c) => sum + c.metrics.cta_clicks + c.metrics.pin_clicks, 0);
-  const totalPinClicks = filteredCampaigns.reduce((sum, c) => sum + c.metrics.pin_clicks, 0);
-  const totalClickButton = filteredCampaigns.reduce((sum, c) => sum + c.metrics.cta_clicks, 0);
-  const totalPageViews = filteredCampaigns.reduce((sum, c) => sum + c.metrics.page_views, 0);
+  
+  // Use filtered metrics when date range is active, otherwise use campaign totals
+  const totalPinClicks = filteredMetrics 
+    ? filteredMetrics.totalPinClicks
+    : filteredCampaigns.reduce((sum, c) => sum + c.metrics.pin_clicks, 0);
+  
+  const totalClickButton = filteredMetrics
+    ? filteredMetrics.totalCtaClicks
+    : filteredCampaigns.reduce((sum, c) => sum + c.metrics.cta_clicks, 0);
+  
+  const totalPageViews = filteredMetrics
+    ? filteredMetrics.totalPageViews
+    : filteredCampaigns.reduce((sum, c) => sum + c.metrics.page_views, 0);
+  
+  const totalClicks = totalPinClicks + totalClickButton;
 
   const clearFilters = () => {
     setSearchTerm("");

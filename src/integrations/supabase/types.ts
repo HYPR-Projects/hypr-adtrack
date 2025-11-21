@@ -398,6 +398,19 @@ export type Database = {
           campaign_id: string
         }[]
       }
+      get_metrics_by_campaign_and_daterange: {
+        Args: {
+          p_campaign_ids: string[]
+          p_end_date: string
+          p_start_date: string
+        }
+        Returns: {
+          campaign_id: string
+          cta_clicks: number
+          page_views: number
+          pin_clicks: number
+        }[]
+      }
       get_realtime_event_counts: {
         Args: { p_since: string; p_tag_ids: string[] }
         Returns: {

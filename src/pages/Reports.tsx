@@ -133,17 +133,35 @@ const Reports = () => {
     if (!campaignSearchTerm.trim()) return filteredCampaignsForDropdown;
     
     const searchLower = campaignSearchTerm.toLowerCase();
+    // Split search into words for multi-word search (e.g., "boticario natal")
+    const searchWords = searchLower.split(/\s+/).filter(word => word.length > 0);
+    
     return filteredCampaignsForDropdown.filter(campaign => {
-      // Buscar pelo nome da campanha
-      if (campaign.name.toLowerCase().includes(searchLower)) return true;
-      // Buscar pela descrição
-      if (campaign.description?.toLowerCase().includes(searchLower)) return true;
-      // Buscar pelo nome da IO associada
+      // Collect all searchable text for this campaign
+      const searchableTexts: string[] = [
+        campaign.name.toLowerCase(),
+        campaign.description?.toLowerCase() || '',
+      ];
+      
+      // Add campaign group name
+      const campaignGroup = campaignGroups.find(cg => cg.id === campaign.campaign_group_id);
+      if (campaignGroup?.name) {
+        searchableTexts.push(campaignGroup.name.toLowerCase());
+      }
+      
+      // Add insertion order name
       const io = insertionOrders.find(io => io.id === campaign.insertion_order_id);
-      if (io?.client_name.toLowerCase().includes(searchLower)) return true;
-      return false;
+      if (io?.client_name) {
+        searchableTexts.push(io.client_name.toLowerCase());
+      }
+      
+      // Combine all searchable text
+      const combinedText = searchableTexts.join(' ');
+      
+      // Check if ALL search words are found (allows "boticario natal" to match)
+      return searchWords.every(word => combinedText.includes(word));
     });
-  }, [filteredCampaignsForDropdown, campaignSearchTerm, insertionOrders]);
+  }, [filteredCampaignsForDropdown, campaignSearchTerm, insertionOrders, campaignGroups]);
 
   const filteredCreatives = useMemo(() => {
     if (!creativeSearchTerm.trim()) return availableCreatives;
@@ -637,6 +655,8 @@ const Reports = () => {
                       ) : (
                         searchedCampaignsForDropdown.map((campaign) => {
                           const io = insertionOrders.find(io => io.id === campaign.insertion_order_id);
+                          const campaignGroup = campaignGroups.find(cg => cg.id === campaign.campaign_group_id);
+                          const subtitle = io?.client_name || campaignGroup?.name || campaign.description || 'Sem grupo';
                           return (
                             <div key={campaign.id} className="flex items-center space-x-2">
                               <Checkbox
@@ -654,7 +674,7 @@ const Reports = () => {
                                   {campaign.name}
                                 </Label>
                                 <p className="text-xs text-muted-foreground truncate">
-                                  {io?.client_name || campaign.description || 'Sem IO'}
+                                  {subtitle}
                                 </p>
                               </div>
                             </div>

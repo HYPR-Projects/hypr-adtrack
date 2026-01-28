@@ -92,22 +92,25 @@ export const useCampaignsQuery = (campaignGroupId?: string) => {
           last_hour: 0
         };
 
-        // Lógica de status baseada em datas + atividade recente
+        // Lógica de status baseada em atividade recente + datas
         const now = new Date();
         const startDate = new Date(campaign.start_date);
         const endDate = new Date(campaign.end_date);
         
         let derivedStatus: 'active' | 'paused' | 'scheduled' | 'expired';
         
-        if (now < startDate) {
+        // PRIORIDADE 1: Se tem atividade na última hora, está ativo
+        if (metrics.last_hour > 0) {
+          derivedStatus = 'active';
+        } else if (now < startDate) {
           // Campanha ainda não começou
           derivedStatus = 'scheduled';
         } else if (now > endDate) {
-          // Campanha já finalizou
+          // Campanha já finalizou e sem atividade recente
           derivedStatus = 'expired';
         } else {
-          // Campanha no período válido: verificar atividade na última hora
-          derivedStatus = metrics.last_hour > 0 ? 'active' : 'paused';
+          // Campanha no período válido, mas sem atividade
+          derivedStatus = 'paused';
         }
 
         return {

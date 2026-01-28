@@ -88,9 +88,9 @@ export const useReportEvents = ({ selectedCampaignIds, dateRange, groupBy, selec
       // Determine if we need tag breakdown
       const needsTagBreakdown = selectedDimensions.includes('campaign_tags');
       
-      // Use the optimized materialized view RPC - queries 201 rows instead of 3.2M!
+      // Query directly from events table for real-time data
       const { data: aggregatedData, error: aggregatedError } = await supabase
-        .rpc('get_report_from_materialized_view', {
+        .rpc('get_report_from_events' as any, {
           p_campaign_ids: selectedCampaignIds,
           p_start_date: startDate,
           p_end_date: endDate,
@@ -109,7 +109,7 @@ export const useReportEvents = ({ selectedCampaignIds, dateRange, groupBy, selec
       }
       
       // Fetch campaign details for display
-      const campaignIds = [...new Set(aggregatedData.map(d => d.campaign_id).filter(Boolean))];
+      const campaignIds = [...new Set(aggregatedData.map((d: any) => d.campaign_id).filter(Boolean))] as string[];
       const { data: campaigns, error: campaignsError } = await supabase
         .from('campaigns')
         .select(`

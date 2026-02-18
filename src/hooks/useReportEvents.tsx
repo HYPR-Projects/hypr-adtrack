@@ -88,8 +88,11 @@ export const useReportEvents = ({ selectedCampaignIds, dateRange, groupBy, selec
       // Determine if we need tag breakdown
       const needsTagBreakdown = selectedDimensions.includes('campaign_tags');
       
-      // Query from materialized view for fast aggregated data
-      const { data: aggregatedData, error: aggregatedError } = await supabase
+      // Try materialized view first (fast), fallback to events table if empty
+      let aggregatedData: any[] | null = null;
+      let aggregatedError: any = null;
+      
+      const { data: mvData, error: mvError } = await supabase
         .rpc('get_report_from_materialized_view' as any, {
           p_campaign_ids: selectedCampaignIds,
           p_start_date: startDate,
@@ -97,8 +100,28 @@ export const useReportEvents = ({ selectedCampaignIds, dateRange, groupBy, selec
           p_group_by: groupBy
         });
       
-      if (aggregatedError) {
-        throw new Error(`Erro ao buscar dados agregados: ${aggregatedError.message}`);
+      if (mvError) {
+        console.warn('Materialized view query failed, falling back to events:', mvError.message);
+      }
+      
+      // If materialized view returned data, use it
+      if (!mvError && mvData && mvData.length > 0) {
+        aggregatedData = mvData;
+      } else {
+        // Fallback to direct events query
+        console.log('Materialized view empty or failed, using get_report_from_events fallback');
+        const { data: eventsData, error: eventsError } = await supabase
+          .rpc('get_report_from_events' as any, {
+            p_campaign_ids: selectedCampaignIds,
+            p_start_date: startDate,
+            p_end_date: endDate,
+            p_group_by: groupBy
+          });
+        
+        if (eventsError) {
+          throw new Error(`Erro ao buscar dados: ${eventsError.message}`);
+        }
+        aggregatedData = eventsData;
       }
       
       console.log('Report aggregated data (unlimited):', aggregatedData);

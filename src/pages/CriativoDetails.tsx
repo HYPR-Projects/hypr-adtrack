@@ -367,27 +367,26 @@ const CampaignDetails = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Fixed Liquid Glass Header */}
-      <div className="fixed top-0 left-0 right-0 z-50 backdrop-blur-lg bg-white/50 border-b border-white/20 shadow-lg">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-start justify-between">
-            <div className="flex items-start gap-4">
-              <Link to="/criativos">
+      <div className="sticky top-0 left-0 right-0 z-50 backdrop-blur-lg bg-background/95 backdrop-saturate-150 border-b shadow-sm">
+        <div className="container mx-auto px-3 md:px-4 py-3 md:py-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3 min-w-0 flex-1">
+              <Link to="/criativos" className="shrink-0 mt-1">
                 <Button variant="outline" size="sm" className="gap-2">
                   <ArrowLeft className="w-4 h-4" />
                   Voltar
                 </Button>
               </Link>
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-2xl font-semibold text-foreground">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-3 mb-1">
+                  <h1 className="text-lg md:text-xl font-semibold text-foreground break-words line-clamp-2">
                     {campaign.name}
                   </h1>
-                  <Badge variant={isActive ? 'default' : 'secondary'}>
+                  <Badge variant={isActive ? 'default' : 'secondary'} className="shrink-0">
                     {isActive ? 'Ativo' : 'Inativo'}
                   </Badge>
                 </div>
-                <p className="text-sm text-muted-foreground">{campaign.description}</p>
-                <div className="flex items-center gap-4 mt-2">
+                <div className="flex items-center gap-4 flex-wrap">
                   <p className="text-xs text-muted-foreground">
                     Criada em {formatDate(campaign.created_at)} • 
                     Período: {formatDate(campaign.start_date)} até {formatDate(campaign.end_date)}
@@ -401,11 +400,11 @@ const CampaignDetails = () => {
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 shrink-0">
               <Link to="/reports">
                 <Button variant="outline" size="sm" className="gap-2">
                   <BarChart3 className="w-4 h-4" />
-                  Relatórios
+                  <span className="hidden sm:inline">Relatórios</span>
                 </Button>
               </Link>
               <UserMenu />
@@ -414,8 +413,8 @@ const CampaignDetails = () => {
         </div>
       </div>
 
-      {/* Content with top padding to account for fixed header */}
-      <div className="pt-32">
+      {/* Content */}
+      <div className="pt-3 md:pt-4">
         <div className="container mx-auto px-4 py-6">
           {/* Breadcrumb */}
           <Breadcrumb items={breadcrumbItems} />

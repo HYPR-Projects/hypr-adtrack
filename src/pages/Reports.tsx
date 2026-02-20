@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useCampaigns } from "@/hooks/useCampaigns";
 import { useInsertionOrders } from "@/hooks/useInsertionOrders";
@@ -93,6 +94,8 @@ const Reports = () => {
   const [creativeSearchTerm, setCreativeSearchTerm] = useState("");
   const [previewPage, setPreviewPage] = useState(1);
   const PREVIEW_PAGE_SIZE = 30;
+  const [sortColumn, setSortColumn] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
   // Get unique creatives from campaigns
   const availableCreatives = useMemo(() => {
@@ -328,11 +331,38 @@ const Reports = () => {
     setPreviewPage(1);
   }, [reportData.length, reportConfig.groupBy, reportConfig.dimensions]);
 
-  const previewTotalPages = Math.ceil(reportData.length / PREVIEW_PAGE_SIZE);
+  // Sort report data
+  const sortedReportData = useMemo(() => {
+    if (!sortColumn) return reportData;
+    return [...reportData].sort((a, b) => {
+      const valA = a[sortColumn];
+      const valB = b[sortColumn];
+      // Numeric sort for numbers
+      if (typeof valA === 'number' && typeof valB === 'number') {
+        return sortDirection === 'asc' ? valA - valB : valB - valA;
+      }
+      // String sort
+      const strA = String(valA ?? '');
+      const strB = String(valB ?? '');
+      return sortDirection === 'asc' ? strA.localeCompare(strB) : strB.localeCompare(strA);
+    });
+  }, [reportData, sortColumn, sortDirection]);
+
+  const previewTotalPages = Math.ceil(sortedReportData.length / PREVIEW_PAGE_SIZE);
   const paginatedReportData = useMemo(() => {
     const start = (previewPage - 1) * PREVIEW_PAGE_SIZE;
-    return reportData.slice(start, start + PREVIEW_PAGE_SIZE);
-  }, [reportData, previewPage]);
+    return sortedReportData.slice(start, start + PREVIEW_PAGE_SIZE);
+  }, [sortedReportData, previewPage]);
+
+  const handleSort = useCallback((column: string) => {
+    if (sortColumn === column) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('desc');
+    }
+    setPreviewPage(1);
+  }, [sortColumn]);
 
   // Clean up invalid campaign selections when IOs change
   useEffect(() => {
@@ -961,7 +991,20 @@ const Reports = () => {
                       <TableHeader>
                         <TableRow>
                           {Object.keys(reportData[0]).map((column) => (
-                            <TableHead key={column}>{column}</TableHead>
+                            <TableHead 
+                              key={column} 
+                              className="cursor-pointer select-none hover:bg-muted/50 transition-colors"
+                              onClick={() => handleSort(column)}
+                            >
+                              <div className="flex items-center gap-1">
+                                {column}
+                                {sortColumn === column ? (
+                                  sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                                ) : (
+                                  <ArrowUpDown className="h-3 w-3 opacity-30" />
+                                )}
+                              </div>
+                            </TableHead>
                           ))}
                         </TableRow>
                       </TableHeader>

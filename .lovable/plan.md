@@ -1,51 +1,84 @@
 
+# Plano: Restaurar Indicador de Atividade Recente (last_hour)
 
-# Plano: Recarregar Dados Somente Quando o Usuario Pedir
+## Problema
 
-## Situacao Atual
+A correcao anterior mudou `get_campaign_counters` para usar `campaign_metrics_daily`, o que resolveu os dados zerados. Porem, como essa view so tem granularidade diaria, o campo `last_hour` ficou fixo em 0.
 
-O hook `useCampaignsQuery` tem um `refetchInterval: 60 * 1000` que faz o sistema buscar dados no banco **a cada 1 minuto automaticamente**, mesmo que o usuario esteja parado na pagina. Isso gera requisicoes desnecessarias ao banco.
+Dados reais confirmam que campanhas do Boticario **estao recebendo sinais agora**:
+- 1 criativo: 2.744 eventos na ultima hora
+- 1 criativo: 1.097 eventos na ultima hora
+- 4 outros com atividade menor
 
-Os outros hooks nao tem refresh automatico, mas alguns tem `staleTime` curto (1-2 min), o que faz com que ao navegar entre paginas, os dados sejam buscados novamente rapidamente.
+## Solucao
 
-## Mudancas Propostas
+Alterar a funcao `get_campaign_counters` para buscar `last_hour` diretamente da tabela `events` via JOIN com `tags`, mantendo todos os outros campos (page_views, cta_clicks, pin_clicks, total_7d) vindos da `campaign_metrics_daily`.
 
-### 1. Remover refresh automatico do `useCampaignsQuery`
+A consulta de ultima hora e leve porque:
+- Filtra apenas `created_at >= NOW() - INTERVAL '1 hour'` (poucos registros)
+- Usa indice existente na coluna `created_at`
+- Nao precisa escanear a tabela inteira
 
-Remover a linha `refetchInterval: 60 * 1000` para que os dados so sejam buscados novamente quando:
-- O usuario recarrega a pagina manualmente (F5)
-- O cache expira e o usuario navega para a pagina
+### SQL da funcao atualizada
 
-### 2. Aumentar staleTime para evitar recargas desnecessarias
+```text
+CREATE OR REPLACE FUNCTION get_campaign_counters(campaign_ids uuid[])
+RETURNS TABLE(
+  campaign_id uuid,
+  page_views bigint,
+  cta_clicks bigint,
+  pin_clicks bigint,
+  total_7d bigint,
+  last_hour bigint
+)
+LANGUAGE plpgsql SECURITY DEFINER
+SET search_path TO 'public'
+SET statement_timeout TO '10s'
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    uid as campaign_id,
+    COALESCE(agg.page_views, 0::bigint),
+    COALESCE(agg.cta_clicks, 0::bigint),
+    COALESCE(agg.pin_clicks, 0::bigint),
+    COALESCE(agg.total_7d, 0::bigint),
+    COALESCE(lh.last_hour, 0::bigint)
+  FROM unnest(campaign_ids) AS uid
+  LEFT JOIN (
+    SELECT
+      cmd.campaign_id,
+      SUM(cmd.page_views)::bigint as page_views,
+      SUM(cmd.cta_clicks)::bigint as cta_clicks,
+      SUM(cmd.pin_clicks)::bigint as pin_clicks,
+      SUM(CASE WHEN cmd.metric_date >= CURRENT_DATE - INTERVAL '7 days'
+          THEN cmd.page_views + cmd.cta_clicks + cmd.pin_clicks ELSE 0 END)::bigint as total_7d
+    FROM campaign_metrics_daily cmd
+    WHERE cmd.campaign_id = ANY(campaign_ids)
+    GROUP BY cmd.campaign_id
+  ) agg ON agg.campaign_id = uid
+  LEFT JOIN (
+    SELECT
+      t.campaign_id,
+      COUNT(*)::bigint as last_hour
+    FROM events e
+    JOIN tags t ON t.id = e.tag_id
+    WHERE t.campaign_id = ANY(campaign_ids)
+      AND e.created_at >= NOW() - INTERVAL '1 hour'
+    GROUP BY t.campaign_id
+  ) lh ON lh.campaign_id = uid
+  WHERE (auth.uid() IS NOT NULL);
+END;
+$$;
+```
 
-Padronizar todos os hooks com `staleTime: 10 * 60 * 1000` (10 minutos) para que os dados fiquem em cache por mais tempo e so sejam rebuscados quando realmente necessario.
+## Arquivos modificados
 
-| Hook | staleTime atual | staleTime novo |
-|---|---|---|
-| `useCampaignsQuery` | 5 min | 10 min |
-| `useCampaignGroupsQuery` | 2 min | 10 min |
-| `useCampaignDetailsQuery` | 2 min | 10 min |
-| `useInsertionOrdersQuery` | 5 min | 10 min |
-| `useReportEvents` | 5 min | 10 min |
-| `useSingleCampaignQuery` | 1 min | 10 min |
+1. `supabase/migrations/` -- Nova migration para atualizar `get_campaign_counters`
 
-### 3. Manter `refetchOnMount: false` em todos
+## Resultado esperado
 
-Isso garante que ao navegar entre paginas, se o cache ainda for valido (dentro do staleTime de 10 min), os dados nao sao buscados novamente.
-
-## Arquivos Modificados
-
-1. `src/hooks/queries/useCampaignsQuery.tsx` -- Remover `refetchInterval`, aumentar `staleTime` para 10 min
-2. `src/hooks/queries/useCampaignGroupsQuery.tsx` -- Aumentar `staleTime` para 10 min
-3. `src/hooks/queries/useCampaignDetailsQuery.tsx` -- Aumentar `staleTime` para 10 min
-4. `src/hooks/queries/useSingleCampaignQuery.tsx` -- Aumentar `staleTime` para 10 min
-5. `src/hooks/queries/useInsertionOrdersQuery.tsx` -- Aumentar `staleTime` para 10 min (ja esta em 5, subir para 10)
-6. `src/hooks/useReportEvents.tsx` -- Aumentar `staleTime` para 10 min (ja esta em 5, subir para 10)
-
-## Resultado
-
-- Dados so recarregam quando o usuario faz F5 ou apos 10 minutos de cache expirado
-- Zero requisicoes automaticas em background
-- Navegacao entre paginas usa cache sem rebuscar
-- Menos carga no banco de dados
-
+- Criativos com atividade na ultima hora mostrarao status "Ativa" e badge "Ult. hora: X" com valor real
+- Criativos sem atividade recente continuarao como "Inativa"
+- Metricas totais (clicks, pins, page views) continuam vindas da view materializada (rapido e confiavel)
+- Timeout de 10s protege contra queries longas

@@ -1,101 +1,62 @@
 
 
-# Plano: Sistema Robusto de Dados para Relatorios
+# Plano: Eliminar Job 3 e Blindar o Sistema
 
-## Diagnostico Raiz
+## Problema Encontrado
 
-A investigacao revelou **3 problemas criticos interligados** que causam os erros recorrentes:
+O **Job 3** (cron antigo) continua rodando a cada 5 minutos e **falhando 100% das vezes** com "statement timeout". A migration anterior para removê-lo não funcionou. Ele está consumindo conexões do banco continuamente, causando lentidão em todas as páginas.
 
-### 1. Cron Job quebrado consumindo o banco (CRITICO)
-O **Job 3** (antigo) esta rodando a cada **5 minutos** e **falhando sempre** com "statement timeout". Ele tenta atualizar DUAS materialized views em uma unica transacao, que nao cabe no timeout de 2 minutos do pg_cron. Isso consome conexoes do pool e gera contenção massiva no banco.
+Além disso, o **Job 4** (HTTP-based) também continua ativo e é redundante com os Jobs 5/6 novos.
 
-### 2. Jobs novos nunca executaram
-Os jobs 5 e 6 (criados na sessao anterior para substituir o job 3) **nunca rodaram** -- provavelmente a migration falhou silenciosamente ou os IDs conflitaram com jobs existentes.
+Evidência dos logs do cron:
+```text
+Job 3: a cada 5 min -> "ERROR: canceling statement due to statement timeout" (14 falhas seguidas)
+Job 4: ativo, redundante
+Job 5: refresh-metrics-summary -> rodando (OK)
+Job 6: refresh-metrics-daily -> ativo (OK)
+```
 
-### 3. Fallback perigoso para tabela de 50M+ linhas
-Quando a materialized view retorna vazio (por contenção do banco), o codigo faz fallback para `get_report_from_events` que escaneia a tabela `events` completa, causando timeout de 15s e o erro que voce ve na tela.
+## Solucao
 
-## Solucao Proposta
+### Parte 1: Remover Jobs 3 e 4 via SQL direto
 
-### Parte 1: Limpar infraestrutura de cron (Banco de Dados)
-
-- **Remover Job 3** (cron quebrado rodando a cada 5 min)
-- **Remover Job 4** (HTTP-based, redundante)
-- **Recriar Jobs 5 e 6** com nomes unicos garantidos:
-  - Job: `refresh-summary-v2` -- a cada 30 minutos, executa apenas `refresh_campaign_metrics_summary()`
-  - Job: `refresh-daily-v2` -- a cada hora, executa apenas `refresh_campaign_metrics_daily()`
-
-### Parte 2: Eliminar fallback perigoso (Frontend)
-
-Modificar `src/hooks/useReportEvents.tsx`:
-
-- **Remover completamente** o fallback para `get_report_from_events` (a funcao que escaneia 50M+ linhas)
-- Se a materialized view retornar vazio, mostrar mensagem amigavel: "Dados sendo processados, tente novamente em alguns minutos"
-- Remover a logica de deteccao de "MV stale" que forçava o fallback
-- Adicionar **retry automatico** (1 tentativa apos 2s) antes de mostrar erro
-
-### Parte 3: Resiliencia no frontend (useReportEvents.tsx)
-
-- Migrar de `useState` + `useEffect` para `useQuery` do TanStack (mesmo padrao do resto do app)
-- Beneficios:
-  - Cache automatico (evita re-fetch desnecessario)
-  - Retry automatico com backoff
-  - Estado de loading/error consistente
-  - `staleTime` de 5 minutos (dados nao mudam a cada segundo)
-  - Deduplicacao de requests identicos
-
-### Parte 4: Otimizacao do carregamento geral
-
-- Adicionar `refetchOnWindowFocus: false` nos queries de Reports para evitar re-fetches desnecessarios
-- Manter o limite de 30 campanhas por consulta
-
-## Detalhes Tecnicos
-
-### Migration SQL
+Usar o SQL Editor do Supabase (nao migration, pois migrations anteriores falharam silenciosamente) para executar:
 
 ```text
--- 1. Remover todos os cron jobs antigos
 SELECT cron.unschedule(3);
 SELECT cron.unschedule(4);
-SELECT cron.unschedule(5);
-SELECT cron.unschedule(6);
-
--- 2. Recriar com statement_timeout adequado
-SELECT cron.schedule(
-  'refresh-summary-v2',
-  '*/30 * * * *',
-  $$SET statement_timeout = '120s'; SELECT public.refresh_campaign_metrics_summary();$$
-);
-
-SELECT cron.schedule(
-  'refresh-daily-v2',
-  '0 * * * *',
-  $$SET statement_timeout = '180s'; SELECT public.refresh_campaign_metrics_daily();$$
-);
 ```
 
-### Refatoracao de useReportEvents.tsx
+Isso elimina imediatamente a contenção no banco.
 
-```text
-Antes (problematico):
-  MV query → se vazio → fallback para events (50M rows) → timeout → erro
+### Parte 2: Adicionar resiliencia nos hooks de queries restantes
 
-Depois (robusto):
-  MV query → se vazio → mensagem "dados sendo processados"
-  useQuery com retry automatico e cache de 5 min
-```
+Alguns hooks ainda nao tem as mesmas protecoes que o `useCampaignsQuery`:
 
-### Arquivos modificados
+1. **`useInsertionOrdersQuery.tsx`** -- Adicionar `retry: 2`, `retryDelay: 1000`, `refetchOnWindowFocus: false`, `refetchOnMount: false`
+2. **`useCampaignGroupsQuery.tsx`** -- Adicionar `retry: 2`, `retryDelay: 1000`, `refetchOnWindowFocus: false`, `refetchOnMount: false`
+3. **`useCampaignDetailsQuery.tsx`** -- Adicionar `refetchOnWindowFocus: false`, `refetchOnMount: false`
 
-1. `supabase/migrations/` -- Nova migration para limpar e recriar cron jobs
-2. `src/hooks/useReportEvents.tsx` -- Refatorar para useQuery, remover fallback perigoso
-3. `src/pages/Reports.tsx` -- Adaptar ao novo formato do hook (minimas mudancas)
+### Parte 3: Adicionar indicador de "dados em cache" na UI
+
+Na pagina de Reports, quando os dados vêm do cache (nao esta fazendo fetch), mostrar uma badge discreta "Dados em cache" para que o usuario saiba que os dados sao recentes mas podem nao ser em tempo real.
+
+### Parte 4: Adicionar error boundary leve na pagina de Reports
+
+Se o `useReportEvents` falhar depois de todos os retries, mostrar uma mensagem amigavel com botao "Tentar novamente" em vez de tela branca ou erro generico.
+
+## Arquivos Modificados
+
+1. `src/hooks/queries/useInsertionOrdersQuery.tsx` -- Adicionar retry e cache settings
+2. `src/hooks/queries/useCampaignGroupsQuery.tsx` -- Adicionar retry e cache settings  
+3. `src/hooks/queries/useCampaignDetailsQuery.tsx` -- Adicionar refetch settings
+4. `src/pages/Reports.tsx` -- Adicionar tratamento de erro amigavel com botao retry
+5. SQL direto no Supabase para remover Jobs 3 e 4
 
 ## Resultado Esperado
 
-- Os dados carregarao em menos de 2 segundos (leitura direta da materialized view)
-- Sem mais timeouts: nenhuma query toca a tabela de 50M+ eventos
-- MVs atualizadas a cada 30min/1h de forma confiavel
-- Cache no frontend evita re-fetches desnecessarios
-- Sistema auto-recuperavel com retry automatico
+- Banco liberado da contenção do Job 3 (impacto imediato em todas as paginas)
+- Todas as queries com retry automatico e cache consistente
+- Erros de relatorio mostram mensagem amigavel com opcao de retry
+- Sistema mais resiliente a falhas temporarias do banco
 

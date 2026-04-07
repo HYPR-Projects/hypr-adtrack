@@ -745,8 +745,6 @@ const CampaignDetails = () => {
             )}
           </CardContent>
         </Card>
-        </div>
-      </main>
 
       {/* Edit Campaign Dialog */}
       <EditCampaignDialog 
@@ -754,7 +752,7 @@ const CampaignDetails = () => {
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
       />
-    </div>
+    </AppLayout>
   );
 };
 

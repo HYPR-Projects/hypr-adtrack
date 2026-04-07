@@ -603,6 +603,8 @@ const Criativos = () => {
               currentPage={currentPage}
               totalPages={totalPages}
               onPageChange={setCurrentPage}
+              totalItems={campaignsWithFilteredMetrics.length}
+              itemsPerPage={itemsPerPage}
             />
           </>
         )}

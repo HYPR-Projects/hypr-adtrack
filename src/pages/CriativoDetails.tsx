@@ -338,16 +338,16 @@ const CampaignDetails = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Fixed Liquid Glass Header */}
-      <div className="sticky top-0 left-0 right-0 z-50 backdrop-blur-lg bg-background/95 backdrop-saturate-150 border-b shadow-sm">
+      <header className="sticky top-0 left-0 right-0 z-50 backdrop-blur-lg bg-background/95 backdrop-saturate-150 border-b shadow-sm">
         <div className="container mx-auto px-3 md:px-4 py-3 md:py-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-3 min-w-0 flex-1">
-              <Link to="/criativos" className="shrink-0 mt-1">
-                <Button variant="outline" size="sm" className="gap-2">
+              <Button variant="outline" size="sm" className="gap-2 shrink-0 mt-1" asChild>
+                <Link to="/criativos">
                   <ArrowLeft className="w-4 h-4" />
                   Voltar
-                </Button>
-              </Link>
+                </Link>
+              </Button>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-3 mb-1">
                   <h1 className="text-lg md:text-xl font-semibold text-foreground break-words line-clamp-2">
@@ -382,10 +382,10 @@ const CampaignDetails = () => {
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Content */}
-      <div className="pt-3 md:pt-4">
+      <main className="pt-3 md:pt-4">
         <div className="container mx-auto px-4 py-6">
           {/* Breadcrumb */}
           <Breadcrumb items={breadcrumbItems} />
@@ -719,6 +719,7 @@ const CampaignDetails = () => {
             ) : (
               <div className="overflow-x-auto">
                 <Table>
+                  <caption className="sr-only">Métricas diárias de eventos da campanha</caption>
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-[120px]">Data</TableHead>

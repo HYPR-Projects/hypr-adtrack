@@ -17,7 +17,7 @@ const BreadcrumbComponent = ({ items }: BreadcrumbProps) => {
   const location = useLocation();
 
   return (
-    <nav className="flex items-center gap-1 text-xs md:text-sm text-muted-foreground mb-4 md:mb-6 overflow-x-auto scrollbar-hide pb-2">
+    <nav aria-label="Navegação estrutural" className="flex items-center gap-1 text-xs md:text-sm text-muted-foreground mb-4 md:mb-6 overflow-x-auto scrollbar-hide pb-2">
       <div className="flex items-center gap-1 md:gap-2 min-w-max">
         {items.map((item, index) => {
           const Icon = item.icon;
@@ -34,7 +34,7 @@ const BreadcrumbComponent = ({ items }: BreadcrumbProps) => {
               {item.href ? (
                 <Link 
                   to={item.href}
-                  className={`flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1.5 md:py-2 rounded-md transition-none hover:bg-muted hover:text-foreground text-xs md:text-sm whitespace-nowrap ${
+                  className={`flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1.5 md:py-2 rounded-md transition-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none text-xs md:text-sm whitespace-nowrap ${
                     isActive 
                       ? 'bg-primary text-primary-foreground font-medium' 
                       : ''

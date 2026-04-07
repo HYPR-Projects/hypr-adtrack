@@ -49,9 +49,6 @@ export const useCampaignGroups = () => {
   const queryClient = useQueryClient();
   const { data: campaignGroups = [], isLoading: loading, refetch } = useCampaignGroupsQuery();
 
-  const fetchCampaignGroups = useCallback(async () => {
-    await refetch();
-  }, [refetch]);
 
   const createCampaignGroup = useCallback(async (data: CreateCampaignGroupData) => {
     if (!user) return { error: 'User not authenticated' };

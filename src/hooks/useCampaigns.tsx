@@ -63,9 +63,6 @@ export const useCampaigns = () => {
   const queryClient = useQueryClient();
   const { data: campaigns = [], isLoading: loading, isFetching, refetch } = useCampaignsQuery();
 
-  const fetchCampaigns = useCallback(async () => {
-    await refetch();
-  }, [refetch]);
 
   const createCampaign = useCallback(async (campaignData: {
     name: string;

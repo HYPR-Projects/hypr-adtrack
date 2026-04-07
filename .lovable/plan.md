@@ -1,116 +1,109 @@
 
 
-# Relatorio de Auditoria CSS/HTML
+# Auditoria de Acessibilidade HTML/ARIA
 
-## 1. Cores Hardcoded (Tailwind vanilla em vez de variaveis CSS do design system)
+## Prioridade 1 — Impacto Alto (afeta navegacao e compreensao)
 
-O projeto define variaveis CSS para `--blue-500`, `--green-500`, `--purple-500`, `--orange-500` (com suporte a dark mode), mas **quase nenhum componente as usa**. Em vez disso, usam classes Tailwind vanilla (`bg-blue-50`, `text-green-600`) que **ignoram o dark mode** completamente.
+### 1.1 `index.html` — lang errado
+`<html lang="en">` mas todo o conteudo esta em portugues. Deve ser `lang="pt-BR"`. Afeta leitores de tela que pronunciarao todo o texto com fonetica inglesa.
 
-| Arquivo | Classes hardcoded (exemplos) | Problema |
-|---|---|---|
-| `CriativoDetails.tsx` | `bg-blue-50`, `text-blue-600`, `bg-green-50`, `text-green-600`, `bg-purple-50`, `text-purple-600`, `bg-orange-50`, `text-orange-600` | 4 cards de metricas com cores vanilla. Quebra no dark mode. |
-| `CriativoDetails.tsx` | `bg-blue-50 text-blue-700 border-blue-200`, `bg-green-50 text-green-700 border-green-200`, `bg-purple-50 text-purple-700 border-purple-200` | Badges de tipo de tag (duplicado 2x no mesmo arquivo) |
-| `CriativoDetails.tsx` | `text-purple-600`, `text-blue-600`, `text-green-600` | Widget realtime stats - cores inline |
-| `CriativoDetails.tsx` | `text-neutral-600` (4x) | Usa `text-neutral-600` em vez de `text-muted-foreground`. Inconsistente com o resto do app. |
-| `CampaignGroupCard.tsx` | `bg-blue-50`, `text-blue-600`, `bg-purple-50`, `text-purple-600`, `bg-green-50`, `text-green-600` | 3 celulas de metricas com cores vanilla |
-| `CampaignCard.tsx` | `bg-green-50 text-green-700 border-green-200`, `bg-yellow-50 text-yellow-700 border-yellow-200` | Badge "Ult. hora" |
-| `CampaignCard.tsx` | `hover:text-blue-600` | Link hover color hardcoded |
-| `Campanhas.tsx` | `bg-green-50 dark:bg-green-950`, `text-green-600 dark:text-green-400` | Unico local que tenta suportar dark mode, mas usa cores vanilla em vez das variaveis CSS |
-| `InsertionOrders.tsx` | `text-green-600`, `text-blue-600` | MetricsCard iconColor |
-| `Criativos.tsx` | `bg-orange-500/5`, `text-orange-500`, `bg-blue-500/5`, `text-blue-500`, `bg-purple-500/5`, `text-purple-500` | Usa variaveis do design system via Tailwind config (correto), mas inconsistente com outros arquivos |
-| `Auth.tsx` | `bg-green-500/20`, `border-green-500/30`, `text-green-100` | Feedback de reset de senha |
+### 1.2 Hierarquia de headings quebrada em todas as paginas
 
-**Total: ~90 ocorrencias de cores hardcoded espalhadas em 7 arquivos.**
-
----
-
-## 2. Breakpoints Inconsistentes
-
-O projeto usa breakpoints Tailwind (`sm`, `md`, `lg`, `xl`) mas de forma inconsistente entre paginas que fazem a mesma coisa:
-
-| Padrao | Onde | Inconsistencia |
-|---|---|---|
-| Grid de metricas | `Criativos.tsx` | `grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6` |
-| Grid de metricas | `Campanhas.tsx` | `grid-cols-1 sm:grid-cols-2 lg:grid-cols-4` |
-| Grid de metricas | `InsertionOrders.tsx` | `grid-cols-1 md:grid-cols-3` |
-| Grid de metricas | `CriativoDetails.tsx` | `grid-cols-1 md:grid-cols-2 lg:grid-cols-4` |
-| Input height | `Campanhas.tsx` | `h-9 md:h-10` (responsivo) |
-| Input height | `InsertionOrders.tsx` | sem altura definida (default) |
-| Spacing abaixo de cards | `Criativos.tsx` | `mb-6 md:mb-8` |
-| Spacing abaixo de cards | `Campanhas.tsx` | `mb-4 md:mb-6` |
-| Spacing abaixo de cards | `InsertionOrders.tsx` | `mb-6` (sem responsivo) |
-| Card padding | `CampaignGroupCard.tsx` | `px-4 md:px-6 py-4 md:py-6` |
-| Card padding | `InsertionOrderCard.tsx` | `px-4 md:px-6 py-4 md:py-6` (igual) |
-| Card padding | `CampaignCard.tsx` | `px-3 md:px-4 py-3 md:py-4` (menor) |
-| Metrica cell padding | `CampaignGroupCard.tsx` | `p-2 md:p-3` |
-| Metrica cell padding | `InsertionOrderCard.tsx` | `p-1.5 md:p-2` |
-| Metrica cell padding | `CampaignCard.tsx` | `p-2` (sem responsivo) |
-
----
-
-## 3. Propriedades Duplicadas / Estilos Sobrescrevendo Sem Necessidade
-
-### 3.1 Badge de tipo de tag (duplicado identico)
-`CriativoDetails.tsx` linhas 505-510 e 573-578: **exato mesmo bloco** de classes condicionais para badges de tipo de tag. Deveria ser extraido para funcao ou componente.
-
-### 3.2 Card base classes repetidas
-Toda Card no projeto repete `border shadow-sm`. A propria Card ja tem `border` e `shadow-sm` no componente base (`card.tsx` linha 13: `"rounded-lg border bg-card text-card-foreground shadow-sm"`). Adicionar `border shadow-sm` de novo e redundante -- **nao causa dano visual** mas e codigo duplicado.
-
-Arquivos afetados: `CriativoDetails.tsx` (6x), `Campanhas.tsx` (4x), `InsertionOrders.tsx` (3x), `Criativos.tsx` (2x).
-
-### 3.3 `SelectContent` com `bg-background border shadow-md z-50`
-Repetido em `Criativos.tsx` (5x), `Campanhas.tsx` (3x). Essas propriedades ja sao parte do estilo base do `SelectContent` (popover styling via Radix). `InsertionOrders.tsx` nao adiciona -- e funciona igual.
-
-### 3.4 Header reimplementado em `CriativoDetails.tsx`
-Linhas 341-385: Reimplementa o header sticky com `backdrop-blur-lg bg-background/95 backdrop-saturate-150`. O `AppLayout` faz o mesmo com `backdrop-blur-sm bg-background/95 backdrop-saturate-150`. Inconsistencia: `blur-lg` vs `blur-sm`.
-
----
-
-## 4. Classes CSS Utilitarias Nao Utilizadas em `index.css`
-
-| Classe | Usada? |
+| Pagina | Problema |
 |---|---|
-| `.gpu-accelerated` | Sim (1x, CampaignCard) |
-| `.container-query` | Nao |
-| `.text-fluid-xs/sm/base/lg/xl` | Nao |
-| `.space-responsive` | Nao |
-| `.touch-target` | Sim (3x, CampaignCard) |
-| `.safe-top/bottom/left/right` | Nao |
-| `.smooth-scroll` | Nao |
-| `.focus-visible-ring` | Nao |
-| `.section-surface` | Sim (7x, varios) |
+| `CriativoDetails.tsx` | Unico `<h1>` no header (nome da campanha). Depois pula para `<h3>` (linhas 560, 714) sem `<h2>`. Cards de metricas usam `<div>` para titulos. |
+| `Campanhas.tsx` | Nenhum `<h1>`. Primeiro heading e `<h2>` (linha 269). |
+| `InsertionOrders.tsx` | Nenhum `<h1>`. Primeiro heading e `<h2>` (linha 182). |
+| `Criativos.tsx` | Nenhum `<h1>`. Primeiro heading e `<h2>` (linha 322 no contextBar, 538 na lista). |
+| `Reports.tsx` | Nenhum `<h1>` (a verificar, mas segue o padrao AppLayout que nao renderiza h1). |
+| `Auth.tsx` | Nenhum `<h1>` visivel. `CardTitle` renderiza `<h3>` por padrao (shadcn). |
 
-**7 de 12 classes utilitarias custom nunca sao usadas.** Peso morto no CSS.
+**AppLayout nao renderiza nenhum `<h1>`**. O logo e uma `<img>`. Nenhuma pagina que usa AppLayout tem heading de nivel 1. Isso e o problema raiz.
+
+### 1.3 Inputs sem labels associados
+
+| Arquivo | Input | Problema |
+|---|---|---|
+| `Campanhas.tsx` L209 | Input de busca | Tem placeholder "Buscar campanhas..." mas nenhum `<label>` associado, nem `aria-label`. O icone Search nao substitui um label. |
+| `InsertionOrders.tsx` L137 | Input de busca | Idem — placeholder sem label acessivel. |
+| `Criativos.tsx` L441 | Input de busca | Idem. |
+| `CriativoDetails.tsx` | Nenhum input de busca, mas os Selects de DSP nao tem labels. |
+
+Todos os `SelectTrigger` com icone + texto (ex: Building + "Insertion Order") tem texto visual, mas nenhum `aria-label` explicito. O Radix Select geralmente propaga o placeholder, entao o impacto e menor.
+
+### 1.4 `CriativoDetails.tsx` — nao usa landmarks
+
+A pagina reimplementa o layout sem `<header>`, `<main>`, `<nav>`. O header sticky usa `<div>` (linha 341). O conteudo usa `<div>` (linha 388). Resultado: leitores de tela nao conseguem navegar por landmarks.
+
+Comparacao: `AppLayout` usa `<header>` e `<main>` corretamente.
 
 ---
 
-## 5. Resumo por Nivel de Risco
+## Prioridade 2 — Impacto Medio
 
-**Risco zero (limpeza CSS morto):**
-1. Remover 7 classes utilitarias nao usadas de `index.css` (container-query, text-fluid-*, space-responsive, safe-*, smooth-scroll, focus-visible-ring)
+### 2.1 Contraste insuficiente
 
-**Risco baixo (padronizacao):**
-2. Substituir `text-neutral-600` por `text-muted-foreground` em CriativoDetails (4 ocorrencias)
-3. Remover `border shadow-sm` redundante de Cards que ja herdam do componente base (~15 ocorrencias)
-4. Remover `bg-background border shadow-md z-50` redundante de SelectContent (~8 ocorrencias)
-5. Extrair logica de badge de tipo de tag (click-button/pin/page-view) para funcao reutilizavel em CriativoDetails
+| Elemento | Classes | Problema |
+|---|---|---|
+| `Auth.tsx` — textos sobre fundo escuro | `text-white/80`, `text-white/70`, `text-white/60` | Opacidades de 60-70% sobre imagem escura com overlay `bg-black/30` podem nao atingir ratio 4.5:1 WCAG AA. O pior caso e `placeholder:text-white/60` nos inputs. |
+| `Auth.tsx` — "Esqueci minha senha" | `text-white/80 hover:text-white` | Link funcional com contraste potencialmente insuficiente. |
+| Breadcrumb separadores | `text-muted-foreground/60` | Opacidade 60% sobre fundo claro. Decorativo, impacto menor. |
+| Spinner de loading | `border-b-2 border-primary` | Spinner animado sem texto alternativo — usuario de leitor de tela nao sabe que esta carregando. |
 
-**Risco medio (dark mode + consistencia):**
-6. Substituir cores vanilla (`bg-blue-50`, `text-blue-600`) pelas variaveis do design system (`bg-blue-500/10`, `text-blue-500`) em CriativoDetails e CampaignGroupCard -- alinha com o padrao ja usado em Criativos.tsx
-7. Padronizar breakpoints de grid de metricas entre as 4 paginas
-8. Padronizar spacing (mb) entre secoes das 3 paginas de listagem
+### 2.2 Foco visivel
 
-**Sinalizado (nao mexer sem aprovacao explicita):**
-9. Migrar CriativoDetails para usar AppLayout (mudanca estrutural significativa)
-10. Unificar blur do header (`blur-sm` vs `blur-lg`)
+Os componentes shadcn/ui (Button, Input, Select) ja incluem `focus-visible:ring-2 focus-visible:ring-ring`. Porem:
 
-### Arquivos a modificar
-- `src/index.css` (remover classes mortas)
-- `src/pages/CriativoDetails.tsx` (cores, redundancias, badge helper)
-- `src/components/CampaignGroupCard.tsx` (cores vanilla)
-- `src/components/CampaignCard.tsx` (cores vanilla, border redundante)
-- `src/components/InsertionOrderCard.tsx` (border redundante)
-- `src/pages/Campanhas.tsx` (border redundante, SelectContent)
-- `src/pages/InsertionOrders.tsx` (border redundante)
-- `src/pages/Criativos.tsx` (border redundante, SelectContent)
+| Elemento | Problema |
+|---|---|
+| `Breadcrumb.tsx` — Links | Usam `<Link>` com classes custom mas sem `focus-visible` explicito. O browser default focus pode ser suprimido pelo `rounded-md` + background. |
+| `CriativoDetails.tsx` L345 | `<Link to="/criativos">` wrapping um `<Button>` — foco pode ficar no Link ou no Button, criando confusao de tab order. |
+| `Auth.tsx` — "Esqueci minha senha" | `<button>` com classes custom mas sem `focus-visible` ring. |
+
+### 2.3 Breadcrumb sem `aria-label`
+
+`Breadcrumb.tsx` usa `<nav>` (correto) mas sem `aria-label="Navegacao"` ou equivalente. Com multiplos `<nav>` na pagina (se houver), leitores de tela nao distinguem.
+
+---
+
+## Prioridade 3 — Impacto Baixo
+
+### 3.1 Tabela de metricas sem `<caption>`
+`CriativoDetails.tsx` L721-767: `<Table>` de metricas diarias sem `<caption>`. Leitores de tela nao sabem o proposito da tabela sem contexto.
+
+### 3.2 Icones decorativos sem `aria-hidden`
+Icones Lucide dentro de botoes com texto (ex: `<Download className="w-4 h-4" /> Exportar CSV`) nao tem `aria-hidden="true"`. Lucide geralmente adiciona isso por padrao, mas vale confirmar.
+
+### 3.3 Loading states sem live region
+Nenhum `aria-live="polite"` nos containers de loading/skeleton. Usuarios de leitores de tela nao sabem quando o conteudo terminou de carregar.
+
+---
+
+## Plano de Execucao
+
+### Risco zero:
+1. `index.html` — mudar `lang="en"` para `lang="pt-BR"`
+2. Adicionar `aria-label` nos 3 inputs de busca (Campanhas, InsertionOrders, Criativos)
+3. Adicionar `aria-label="Navegacao estrutural"` no `<nav>` do Breadcrumb
+4. Adicionar `focus-visible:ring-2 focus-visible:ring-ring` no link "Esqueci minha senha" em Auth.tsx
+
+### Risco baixo:
+5. Adicionar `<h1 className="sr-only">` em AppLayout com o titulo da pagina (usa prop `title` ou `subtitle` ja existente)
+6. Converter `<div>` para `<header>` e `<main>` em CriativoDetails.tsx (landmarks)
+7. Adicionar `<caption className="sr-only">` na tabela de metricas diarias
+8. Adicionar `aria-live="polite"` nos containers de loading/skeleton
+
+### Risco medio (sinalizado):
+9. Melhorar contraste dos textos em Auth.tsx (subir opacidades de 60/70% para 80/90%)
+10. Resolver foco duplo Link+Button em CriativoDetails (usar `asChild` ou remover wrapper)
+
+### Arquivos a modificar:
+- `index.html`
+- `src/components/layout/AppLayout.tsx`
+- `src/components/Breadcrumb.tsx`
+- `src/pages/CriativoDetails.tsx`
+- `src/pages/Campanhas.tsx`
+- `src/pages/InsertionOrders.tsx`
+- `src/pages/Criativos.tsx`
+- `src/pages/Auth.tsx`
 

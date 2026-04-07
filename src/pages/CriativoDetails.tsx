@@ -16,12 +16,6 @@ import { useCampaigns, type Tag } from "@/hooks/useCampaigns";
 import { useCampaignDetailsQuery } from "@/hooks/queries/useCampaignDetailsQuery";
 import { useInsertionOrders } from "@/hooks/useInsertionOrders";
 import { supabase } from "@/integrations/supabase/client";
-import AddTagDialog from "@/components/AddTagDialog";
-import { EditCampaignDialog } from "@/components/EditCampaignDialog";
-import { useCampaigns, type Tag } from "@/hooks/useCampaigns";
-import { useCampaignDetailsQuery } from "@/hooks/queries/useCampaignDetailsQuery";
-import { useInsertionOrders } from "@/hooks/useInsertionOrders";
-import { supabase } from "@/integrations/supabase/client";
 
 interface DailyMetric {
   date: string;
@@ -50,7 +44,7 @@ const CampaignDetails = () => {
   const { createTag, deleteTag } = useCampaigns();
   const { data: campaign, isLoading: loading } = useCampaignDetailsQuery(id);
   const { insertionOrders } = useInsertionOrders();
-  const { generateBreadcrumbs } = useBreadcrumbs();
+  const { campaignGroups } = useCampaigns(); // reuse hook for groups context
   const [dailyMetrics, setDailyMetrics] = useState<DailyMetric[]>([]);
   const [loadingMetrics, setLoadingMetrics] = useState(false);
   const [isActive, setIsActive] = useState(false);

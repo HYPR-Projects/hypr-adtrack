@@ -25,7 +25,85 @@ interface DailyMetric {
   page_views: number;
 }
 
+const formatDate = (dateString: string) => {
+  // If it's already in YYYY-MM-DD format, convert directly to pt-BR format
+  if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    const [year, month, day] = dateString.split('-');
+    return `${day}/${month}/${year}`;
+  }
+  // Fallback for other formats
+  return new Date(dateString).toLocaleDateString('pt-BR');
+};
 
+const calculateCTR = (clicks: number, pageViews: number) => {
+  return pageViews > 0 ? ((clicks / pageViews) * 100).toFixed(2) : "0.00";
+};
+
+const CampaignDetails = () => {
+  const { id } = useParams();
+  const { toast } = useToast();
+  const { createTag, deleteTag } = useCampaigns();
+  const { data: campaign, isLoading: loading } = useCampaignDetailsQuery(id);
+  const { insertionOrders } = useInsertionOrders();
+  const { generateBreadcrumbs } = useBreadcrumbs();
+  const [dailyMetrics, setDailyMetrics] = useState<DailyMetric[]>([]);
+  const [loadingMetrics, setLoadingMetrics] = useState(false);
+  const [isActive, setIsActive] = useState(false);
+  
+  // Real-time monitoring states
+  const [realtimeStats, setRealtimeStats] = useState<any>({});
+  const [isLoadingStats, setIsLoadingStats] = useState(false);
+  
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const currentInsertionOrder = useMemo(() => {
+    if (!campaign?.insertion_order_id) return null;
+    return insertionOrders.find(io => io.id === campaign.insertion_order_id);
+  }, [campaign, insertionOrders]);
+
+  const loadRealtimeStats = async () => {
+    if (!campaign) return;
+    
+    setIsLoadingStats(true);
+    try {
+      const fifteenMinutesAgo = new Date();
+      fifteenMinutesAgo.setMinutes(fifteenMinutesAgo.getMinutes() - 15);
+
+      const tagIds = campaign.tags.map(tag => tag.id);
+      if (tagIds.length === 0) {
+        setRealtimeStats({});
+        return;
+      }
+
+      const { data: realtimeData, error } = await supabase.rpc('get_realtime_event_counts', {
+        p_tag_ids: tagIds,
+        p_since: fifteenMinutesAgo.toISOString()
+      });
+
+      if (error) {
+        console.error('Error fetching realtime stats:', error);
+        return;
+      }
+
+      const stats: any = {};
+      campaign.tags.forEach(tag => {
+        const tagData = realtimeData?.find(d => d.tag_id === tag.id);
+        stats[tag.id] = {
+          tag: tag,
+          total: (tagData?.page_views || 0) + (tagData?.clicks || 0) + (tagData?.pin_clicks || 0),
+          page_views: tagData?.page_views || 0,
+          clicks: tagData?.clicks || 0,
+          pin_clicks: tagData?.pin_clicks || 0,
+          last_event: tagData?.last_event || null
+        };
+      });
+
+      setRealtimeStats(stats);
+    } catch (error) {
+      console.error('Error loading realtime stats:', error);
+    } finally {
+      setIsLoadingStats(false);
+    }
+  };
 
 
   useEffect(() => {

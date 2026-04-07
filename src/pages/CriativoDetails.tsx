@@ -771,7 +771,7 @@ const CampaignDetails = () => {
           </CardContent>
         </Card>
         </div>
-      </div>
+      </main>
 
       {/* Edit Campaign Dialog */}
       <EditCampaignDialog 

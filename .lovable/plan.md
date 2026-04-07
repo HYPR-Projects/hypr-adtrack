@@ -1,109 +1,117 @@
 
 
-# Auditoria de Acessibilidade HTML/ARIA
+# Auditoria de Performance -- Relatorio de Diagnostico
 
-## Prioridade 1 — Impacto Alto (afeta navegacao e compreensao)
+## 1. Recursos Externos que Bloqueiam Renderizacao
 
-### 1.1 `index.html` — lang errado
-`<html lang="en">` mas todo o conteudo esta em portugues. Deve ser `lang="pt-BR"`. Afeta leitores de tela que pronunciarao todo o texto com fonetica inglesa.
+### 1.1 Google Fonts -- render-blocking (ALTO IMPACTO)
 
-### 1.2 Hierarquia de headings quebrada em todas as paginas
+`index.html` linha 14:
+```html
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+```
 
-| Pagina | Problema |
-|---|---|
-| `CriativoDetails.tsx` | Unico `<h1>` no header (nome da campanha). Depois pula para `<h3>` (linhas 560, 714) sem `<h2>`. Cards de metricas usam `<div>` para titulos. |
-| `Campanhas.tsx` | Nenhum `<h1>`. Primeiro heading e `<h2>` (linha 269). |
-| `InsertionOrders.tsx` | Nenhum `<h1>`. Primeiro heading e `<h2>` (linha 182). |
-| `Criativos.tsx` | Nenhum `<h1>`. Primeiro heading e `<h2>` (linha 322 no contextBar, 538 na lista). |
-| `Reports.tsx` | Nenhum `<h1>` (a verificar, mas segue o padrao AppLayout que nao renderiza h1). |
-| `Auth.tsx` | Nenhum `<h1>` visivel. `CardTitle` renderiza `<h3>` por padrao (shadcn). |
+Apesar de usar `display=swap`, o `<link rel="stylesheet">` no `<head>` e **render-blocking**. O browser precisa baixar e parsear o CSS da Google antes de renderizar qualquer coisa. Em conexoes lentas, isso pode adicionar 200-500ms ao First Contentful Paint.
 
-**AppLayout nao renderiza nenhum `<h1>`**. O logo e uma `<img>`. Nenhuma pagina que usa AppLayout tem heading de nivel 1. Isso e o problema raiz.
+Alem disso, carrega **5 pesos** (300, 400, 500, 600, 700). Auditoria rapida nos componentes mostra uso real de `font-light` (300), `font-medium` (500), `font-semibold` (600) e `font-bold` (700). O peso 400 (normal) e implicito. Porem, `font-light` (300) aparece em zero componentes apos a limpeza anterior -- e peso morto.
 
-### 1.3 Inputs sem labels associados
+**Correcao**: Usar `<link rel="preload" as="style" onload="this.rel='stylesheet'">` com fallback `<noscript>`, e remover peso 300.
 
-| Arquivo | Input | Problema |
-|---|---|---|
-| `Campanhas.tsx` L209 | Input de busca | Tem placeholder "Buscar campanhas..." mas nenhum `<label>` associado, nem `aria-label`. O icone Search nao substitui um label. |
-| `InsertionOrders.tsx` L137 | Input de busca | Idem — placeholder sem label acessivel. |
-| `Criativos.tsx` L441 | Input de busca | Idem. |
-| `CriativoDetails.tsx` | Nenhum input de busca, mas os Selects de DSP nao tem labels. |
+### 1.2 Preload de imagem do Auth na pagina principal (MEDIO IMPACTO)
 
-Todos os `SelectTrigger` com icone + texto (ex: Building + "Insertion Order") tem texto visual, mas nenhum `aria-label` explicito. O Radix Select geralmente propaga o placeholder, entao o impacto e menor.
+`index.html` linha 17:
+```html
+<link rel="preload" href="/lovable-uploads/d177fad6-08ba-4f61-b459-0f35fe3e81f4.png" as="image" fetchpriority="high">
+```
 
-### 1.4 `CriativoDetails.tsx` — nao usa landmarks
+Esta imagem e o **background da pagina de Auth** (login). Para usuarios ja autenticados (maioria dos acessos), essa imagem nunca sera exibida, mas consome bandwidth e compete com recursos criticos. E `fetchpriority="high"`, roubando prioridade do JS do app.
 
-A pagina reimplementa o layout sem `<header>`, `<main>`, `<nav>`. O header sticky usa `<div>` (linha 341). O conteudo usa `<div>` (linha 388). Resultado: leitores de tela nao conseguem navegar por landmarks.
-
-Comparacao: `AppLayout` usa `<header>` e `<main>` corretamente.
+**Correcao**: Remover o preload do `index.html`. A imagem ja tem `loading="eager"` e `fetchPriority="high"` no componente `Auth.tsx` -- ela sera carregada naturalmente quando a pagina de login for acessada.
 
 ---
 
-## Prioridade 2 — Impacto Medio
+## 2. Imagens sem Dimensoes Definidas (CLS)
 
-### 2.1 Contraste insuficiente
+Todas as `<img>` do projeto carecem de `width` e `height` explicitos, causando Layout Shift (CLS) ate o carregamento:
 
-| Elemento | Classes | Problema |
+| Arquivo | Imagem | Problema |
 |---|---|---|
-| `Auth.tsx` — textos sobre fundo escuro | `text-white/80`, `text-white/70`, `text-white/60` | Opacidades de 60-70% sobre imagem escura com overlay `bg-black/30` podem nao atingir ratio 4.5:1 WCAG AA. O pior caso e `placeholder:text-white/60` nos inputs. |
-| `Auth.tsx` — "Esqueci minha senha" | `text-white/80 hover:text-white` | Link funcional com contraste potencialmente insuficiente. |
-| Breadcrumb separadores | `text-muted-foreground/60` | Opacidade 60% sobre fundo claro. Decorativo, impacto menor. |
-| Spinner de loading | `border-b-2 border-primary` | Spinner animado sem texto alternativo — usuario de leitor de tela nao sabe que esta carregando. |
+| `AppLayout.tsx` L45-49 | Logo HYPR header | `className="h-5 md:h-7"` mas sem `width`/`height` HTML. Browser nao reserva espaco. |
+| `Auth.tsx` L93 | Background fullscreen | Sem `width`/`height`. Ocupara a tela toda via CSS, mas antes do load a div colapsa. |
+| `Auth.tsx` L98 | Logo desktop | Sem `width`/`height`. |
+| `Auth.tsx` L106 | Logo mobile | Sem `width`/`height`. |
+| `ResetPassword.tsx` L108-110, L139-141 | Logo (2x) | Sem `width`/`height`. |
+| `CriativoDetails.tsx` L262 | Pixel img tag (gerado) | 1x1, ja tem `width="1" height="1"` -- OK. |
 
-### 2.2 Foco visivel
-
-Os componentes shadcn/ui (Button, Input, Select) ja incluem `focus-visible:ring-2 focus-visible:ring-ring`. Porem:
-
-| Elemento | Problema |
-|---|---|
-| `Breadcrumb.tsx` — Links | Usam `<Link>` com classes custom mas sem `focus-visible` explicito. O browser default focus pode ser suprimido pelo `rounded-md` + background. |
-| `CriativoDetails.tsx` L345 | `<Link to="/criativos">` wrapping um `<Button>` — foco pode ficar no Link ou no Button, criando confusao de tab order. |
-| `Auth.tsx` — "Esqueci minha senha" | `<button>` com classes custom mas sem `focus-visible` ring. |
-
-### 2.3 Breadcrumb sem `aria-label`
-
-`Breadcrumb.tsx` usa `<nav>` (correto) mas sem `aria-label="Navegacao"` ou equivalente. Com multiplos `<nav>` na pagina (se houver), leitores de tela nao distinguem.
+**Correcao**: Adicionar atributos `width` e `height` que reflitam o aspect ratio real (ex: logo `width="120" height="28"`), mantendo o CSS responsivo via `className`. Isso permite o browser reservar espaco antes do load.
 
 ---
 
-## Prioridade 3 — Impacto Baixo
+## 3. Imagens sem Lazy Loading
 
-### 3.1 Tabela de metricas sem `<caption>`
-`CriativoDetails.tsx` L721-767: `<Table>` de metricas diarias sem `<caption>`. Leitores de tela nao sabem o proposito da tabela sem contexto.
+| Arquivo | Imagem | Deveria ter lazy? |
+|---|---|---|
+| `Auth.tsx` L93 | Background | Nao -- e above-the-fold, `loading="eager"` correto. |
+| `Auth.tsx` L98 | Logo desktop | Nao -- above-the-fold. |
+| `Auth.tsx` L106 | Logo mobile | Nao -- above-the-fold (condicional, mas small). |
+| `AppLayout.tsx` L45 | Logo header | Nao -- always visible no header. |
+| `ResetPassword.tsx` | Logos (2x) | Nao -- above-the-fold. |
 
-### 3.2 Icones decorativos sem `aria-hidden`
-Icones Lucide dentro de botoes com texto (ex: `<Download className="w-4 h-4" /> Exportar CSV`) nao tem `aria-hidden="true"`. Lucide geralmente adiciona isso por padrao, mas vale confirmar.
+**Veredicto**: Nenhuma imagem precisa de lazy loading. Todas sao above-the-fold ou logos pequenos no header. Correto como esta.
 
-### 3.3 Loading states sem live region
-Nenhum `aria-live="polite"` nos containers de loading/skeleton. Usuarios de leitores de tela nao sabem quando o conteudo terminou de carregar.
+---
+
+## 4. Polling e Event Listeners Redundantes
+
+### 4.1 `setInterval` de 30s em CriativoDetails (JA SINALIZADO)
+
+Linha 196: `setInterval(loadRealtimeStats, 30000)` faz RPC ao Supabase a cada 30s, mesmo com a tab em background. Consome recursos do banco sem necessidade.
+
+Este item ja foi sinalizado na auditoria anterior como "risco medio". Mantenho a recomendacao: **remover o interval, manter apenas botao manual "Recarregar"**.
+
+### 4.2 `usePreloadPages` -- preload redundante com lazy loading
+
+O hook `usePreloadPages` faz `import()` de InsertionOrders, Campanhas e Criativos via `requestIdleCallback`. Porem, o App.tsx ja usa `React.lazy()` que carrega esses chunks sob demanda quando o usuario navega. O preload antecipa o download, mas:
+- Consome bandwidth desnecessariamente se o usuario so acessa 1 pagina
+- Para a rota `/` (InsertionOrders), o chunk ja carrega imediatamente -- preload e redundante
+- As outras 2 paginas serao carregadas em ~100ms quando acessadas (chunks pequenos)
+
+**Avaliacao**: Baixo impacto. Manter como esta (usa `requestIdleCallback`, nao bloqueia). Sinalizado apenas para consciencia.
+
+### 4.3 Event listeners -- OK
+
+`use-mobile.tsx` usa `matchMedia.addEventListener("change")` com cleanup correto.
+`sidebar.tsx` usa `window.addEventListener("keydown")` com cleanup correto.
+Nenhum caso de delegation que faria diferenca (poucos listeners, todos em componentes React com lifecycle correto).
+
+---
+
+## 5. CSS Nao-Critico no Head
+
+O Vite ja faz bundle e injeta CSS via JS (module), entao nao ha `<link rel="stylesheet">` de CSS local no head -- isso e correto.
+
+O unico CSS externo no head e o Google Fonts (item 1.1 acima).
+
+O `index.css` com todas as variaveis CSS e carregado via import no `main.tsx`, inline pelo Vite no bundle. Nao bloqueia separadamente.
 
 ---
 
 ## Plano de Execucao
 
 ### Risco zero:
-1. `index.html` — mudar `lang="en"` para `lang="pt-BR"`
-2. Adicionar `aria-label` nos 3 inputs de busca (Campanhas, InsertionOrders, Criativos)
-3. Adicionar `aria-label="Navegacao estrutural"` no `<nav>` do Breadcrumb
-4. Adicionar `focus-visible:ring-2 focus-visible:ring-ring` no link "Esqueci minha senha" em Auth.tsx
+1. Remover `<link rel="preload" ...d177fad6...>` do `index.html` (imagem de Auth nao deve ser preloaded globalmente)
+2. Remover peso `300` do URL do Google Fonts (nao usado)
 
 ### Risco baixo:
-5. Adicionar `<h1 className="sr-only">` em AppLayout com o titulo da pagina (usa prop `title` ou `subtitle` ja existente)
-6. Converter `<div>` para `<header>` e `<main>` em CriativoDetails.tsx (landmarks)
-7. Adicionar `<caption className="sr-only">` na tabela de metricas diarias
-8. Adicionar `aria-live="polite"` nos containers de loading/skeleton
+3. Tornar Google Fonts non-render-blocking com pattern `preload` + `onload`
+4. Adicionar `width`/`height` nas `<img>` de logo em `AppLayout.tsx`, `Auth.tsx`, `ResetPassword.tsx` (reduz CLS)
 
-### Risco medio (sinalizado):
-9. Melhorar contraste dos textos em Auth.tsx (subir opacidades de 60/70% para 80/90%)
-10. Resolver foco duplo Link+Button em CriativoDetails (usar `asChild` ou remover wrapper)
+### Risco medio (ja sinalizado anteriormente):
+5. Remover `setInterval` de 30s em `CriativoDetails.tsx`
 
 ### Arquivos a modificar:
-- `index.html`
-- `src/components/layout/AppLayout.tsx`
-- `src/components/Breadcrumb.tsx`
-- `src/pages/CriativoDetails.tsx`
-- `src/pages/Campanhas.tsx`
-- `src/pages/InsertionOrders.tsx`
-- `src/pages/Criativos.tsx`
-- `src/pages/Auth.tsx`
+- `index.html` (itens 1, 2, 3)
+- `src/components/layout/AppLayout.tsx` (item 4)
+- `src/pages/Auth.tsx` (item 4)
+- `src/pages/ResetPassword.tsx` (item 4)
 

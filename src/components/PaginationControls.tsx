@@ -7,59 +7,71 @@ interface PaginationControlsProps {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+  totalItems?: number;
+  itemsPerPage?: number;
 }
 
-export const PaginationControls = ({ currentPage, totalPages, onPageChange }: PaginationControlsProps) => {
+export const PaginationControls = ({ currentPage, totalPages, onPageChange, totalItems, itemsPerPage = 20 }: PaginationControlsProps) => {
   if (totalPages <= 1) return null;
 
+  const startItem = (currentPage - 1) * itemsPerPage + 1;
+  const endItem = totalItems ? Math.min(currentPage * itemsPerPage, totalItems) : currentPage * itemsPerPage;
+
   return (
-    <Pagination className="mt-6">
-      <PaginationContent>
-        <PaginationItem>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-            disabled={currentPage === 1}
-          >
-            <ChevronLeft className="h-4 w-4 mr-1" />
-            Anterior
-          </Button>
-        </PaginationItem>
-        
-        {Array.from({ length: totalPages }, (_, i) => i + 1)
-          .filter(page => page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1)
-          .map((page, index, array) => (
-            <React.Fragment key={page}>
-              {index > 0 && array[index - 1] !== page - 1 && (
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-6">
+      {totalItems != null && (
+        <p className="text-xs text-muted-foreground">
+          Mostrando {startItem}–{endItem} de {totalItems}
+        </p>
+      )}
+      <Pagination className={totalItems == null ? 'w-full' : ''}>
+        <PaginationContent>
+          <PaginationItem>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Anterior
+            </Button>
+          </PaginationItem>
+          
+          {Array.from({ length: totalPages }, (_, i) => i + 1)
+            .filter(page => page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1)
+            .map((page, index, array) => (
+              <React.Fragment key={page}>
+                {index > 0 && array[index - 1] !== page - 1 && (
+                  <PaginationItem>
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                )}
                 <PaginationItem>
-                  <PaginationEllipsis />
+                  <Button
+                    variant={currentPage === page ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => onPageChange(page)}
+                  >
+                    {page}
+                  </Button>
                 </PaginationItem>
-              )}
-              <PaginationItem>
-                <Button
-                  variant={currentPage === page ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => onPageChange(page)}
-                >
-                  {page}
-                </Button>
-              </PaginationItem>
-            </React.Fragment>
-          ))}
-        
-        <PaginationItem>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-            disabled={currentPage === totalPages}
-          >
-            Próxima
-            <ChevronRight className="h-4 w-4 ml-1" />
-          </Button>
-        </PaginationItem>
-      </PaginationContent>
-    </Pagination>
+              </React.Fragment>
+            ))}
+          
+          <PaginationItem>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+              disabled={currentPage === totalPages}
+            >
+              Próxima
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
+    </div>
   );
 };

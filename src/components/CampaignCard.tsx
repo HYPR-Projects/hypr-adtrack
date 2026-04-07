@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { useToast } from '@/hooks/use-toast';
+import { ChevronRight } from 'lucide-react';
 import type { CampaignWithTags } from '@/hooks/useCampaigns';
 
 interface CampaignCardProps {
@@ -15,19 +15,9 @@ const calculateCTR = (clicks: number, pageViews: number) => {
 };
 
 export const CampaignCard = memo(({ campaign }: CampaignCardProps) => {
-  const { toast } = useToast();
-  
   // Calculate CTR based on total clicks vs page views
   const totalClicks = campaign.metrics.cta_clicks + campaign.metrics.pin_clicks;
   const ctr = calculateCTR(totalClicks, campaign.metrics.page_views);
-  
-  const copyToClipboard = (text: string, type: string) => {
-    navigator.clipboard.writeText(text);
-    toast({
-      title: "Copiado!",
-      description: `${type} copiado para a área de transferência`,
-    });
-  };
 
   return (
     <Link to={`/criativos/${campaign.id}`} className="block group">
@@ -93,7 +83,7 @@ export const CampaignCard = memo(({ campaign }: CampaignCardProps) => {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="pt-0 px-4 md:px-6 pb-4 md:pb-6" onClick={(e) => e.preventDefault()}>
+        <CardContent className="pt-0 px-4 md:px-6 pb-4 md:pb-6">
           <div className="space-y-2 md:space-y-3">
             {/* Métricas responsivas - stack no mobile, grid no desktop */}
             <div className="flex flex-col sm:grid sm:grid-cols-3 gap-2 md:gap-3">

@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Edit, Trash2, Building, FolderOpen, MousePointer, Calendar } from 'lucide-react';
+import { MoreHorizontal, Edit, Trash2, Building, FolderOpen, ChevronRight, Calendar } from 'lucide-react';
 import type { InsertionOrderWithMetrics } from '@/hooks/useInsertionOrders';
 
 interface InsertionOrderCardProps {
@@ -171,28 +171,15 @@ export const InsertionOrderCard = memo(({ insertionOrder, onEdit, onDelete }: In
                   )}
                 </div>
               </div>
-              <Link 
-                to={`/insertion-orders/${insertionOrder.id}/campanhas`}
-                onClick={(e) => e.stopPropagation()}
-                className="shrink-0"
-              >
-                <Button variant="default" size="sm" className="gap-2 text-xs">
-                  <MousePointer className="w-3 h-3" />
-                  Nova Campanha
-                </Button>
-              </Link>
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <span>Ver campanhas</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </div>
             </div>
           ) : (
-            <div className="flex justify-end">
-              <Link 
-                to={`/insertion-orders/${insertionOrder.id}/campanhas`}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Button variant="default" size="sm" className="gap-2 text-xs">
-                  <MousePointer className="w-3 h-3" />
-                  Nova Campanha
-                </Button>
-              </Link>
+            <div className="flex items-center justify-end gap-1 text-xs text-muted-foreground">
+              <span>Ver campanhas</span>
+              <ChevronRight className="w-3.5 h-3.5" />
             </div>
           )}
         </div>

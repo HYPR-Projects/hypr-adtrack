@@ -7,8 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Breadcrumb, useBreadcrumbs } from "@/components/Breadcrumb";
-import { UserMenu } from "@/components/UserMenu";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { ArrowLeft, Copy, MousePointer, Eye, Calendar, TrendingUp, Download, Tag as TagIcon, Trash2, User, Activity, Settings, BarChart3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import AddTagDialog from "@/components/AddTagDialog";
@@ -45,7 +44,7 @@ const CampaignDetails = () => {
   const { createTag, deleteTag } = useCampaigns();
   const { data: campaign, isLoading: loading } = useCampaignDetailsQuery(id);
   const { insertionOrders } = useInsertionOrders();
-  const { generateBreadcrumbs } = useBreadcrumbs();
+  
   const [dailyMetrics, setDailyMetrics] = useState<DailyMetric[]>([]);
   const [loadingMetrics, setLoadingMetrics] = useState(false);
   const [isActive, setIsActive] = useState(false);
@@ -207,9 +206,10 @@ const CampaignDetails = () => {
     );
   }
 
-  // Generate breadcrumbs
-  const breadcrumbItems = generateBreadcrumbs();
-
+  // Determine back link based on campaign context
+  const backHref = campaign?.campaign_group_id 
+    ? `/campanhas/${campaign.campaign_group_id}/criativos` 
+    : '/criativos';
   if (!campaign) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -334,79 +334,55 @@ const CampaignDetails = () => {
     });
   };
 
-  return (
-    <div className="min-h-screen bg-background">
-      {/* Fixed Liquid Glass Header */}
-      <header className="sticky top-0 left-0 right-0 z-50 backdrop-blur-lg bg-background/95 backdrop-saturate-150 border-b shadow-sm">
-        <div className="container mx-auto px-3 md:px-4 py-3 md:py-4">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-start gap-3 min-w-0 flex-1">
-              <Button variant="outline" size="sm" className="gap-2 shrink-0 mt-1" asChild>
-                <Link to="/criativos">
-                  <ArrowLeft className="w-4 h-4" />
-                  Voltar
-                </Link>
-              </Button>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-3 mb-1">
-                  <h1 className="text-lg md:text-xl font-semibold text-foreground break-words line-clamp-2">
-                    {campaign.name}
-                  </h1>
-                  <Badge variant={isActive ? 'default' : 'secondary'} className="shrink-0">
-                    {isActive ? 'Ativo' : 'Inativo'}
-                  </Badge>
-                </div>
-                <div className="flex items-center gap-4 flex-wrap">
-                  <p className="text-xs text-muted-foreground">
-                    Criada em {formatDate(campaign.created_at)} • 
-                    Período: {formatDate(campaign.start_date)} até {formatDate(campaign.end_date)}
-                  </p>
-                  {campaign.profile && (
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <User className="w-3 h-3" />
-                      <span>Criado por: {campaign.profile.email}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 shrink-0">
-              <Link to="/reports">
-                <Button variant="outline" size="sm" className="gap-2">
-                  <BarChart3 className="w-4 h-4" />
-                  <span className="hidden sm:inline">Relatórios</span>
-                </Button>
-              </Link>
-              <UserMenu />
-            </div>
-          </div>
-        </div>
-      </header>
+  const actions = (
+    <div className="flex gap-2">
+      <Button 
+        variant="outline" 
+        onClick={() => setEditDialogOpen(true)}
+        className="gap-2"
+      >
+        <Settings className="w-4 h-4" />
+        Editar Criativo
+      </Button>
+      <Button onClick={exportToCSV} className="gap-2">
+        <Download className="w-4 h-4" />
+        Exportar CSV
+      </Button>
+    </div>
+  );
 
-      {/* Content */}
-      <main className="pt-3 md:pt-4">
-        <div className="container mx-auto px-3 md:px-4 py-4 md:py-6">
-          {/* Breadcrumb */}
-          <Breadcrumb items={breadcrumbItems} />
-          
-          {/* Actions Bar */}
-          <div className="flex items-center justify-between mb-6">
-            <div></div>
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                onClick={() => setEditDialogOpen(true)}
-                className="gap-2"
-              >
-                <Settings className="w-4 h-4" />
-                Editar Criativo
-              </Button>
-              <Button onClick={exportToCSV} className="gap-2">
-                <Download className="w-4 h-4" />
-                Exportar CSV
-              </Button>
-            </div>
+  const contextBar = (
+    <div className="flex items-center justify-between flex-wrap gap-3">
+      <div className="flex items-center gap-3">
+        <h2 className="text-lg md:text-xl font-semibold text-foreground break-words line-clamp-2">
+          {campaign.name}
+        </h2>
+        <Badge variant={isActive ? 'default' : 'secondary'} className="shrink-0">
+          {isActive ? 'Ativo' : 'Inativo'}
+        </Badge>
+      </div>
+      <div className="flex items-center gap-4 flex-wrap text-xs text-muted-foreground">
+        <p>
+          Criada em {formatDate(campaign.created_at)} • 
+          Período: {formatDate(campaign.start_date)} até {formatDate(campaign.end_date)}
+        </p>
+        {campaign.profile && (
+          <div className="flex items-center gap-1">
+            <User className="w-3 h-3" />
+            <span>Criado por: {campaign.profile.email}</span>
           </div>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <AppLayout
+      title={campaign.name}
+      backButton={{ href: backHref, label: '← Voltar' }}
+      actions={actions}
+      contextBar={contextBar}
+    >
           
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <Card>
@@ -769,8 +745,6 @@ const CampaignDetails = () => {
             )}
           </CardContent>
         </Card>
-        </div>
-      </main>
 
       {/* Edit Campaign Dialog */}
       <EditCampaignDialog 
@@ -778,7 +752,7 @@ const CampaignDetails = () => {
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
       />
-    </div>
+    </AppLayout>
   );
 };
 

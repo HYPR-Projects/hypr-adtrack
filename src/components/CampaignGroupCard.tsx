@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { EditCampaignGroupDialog } from '@/components/EditCampaignGroupDialog';
-import { BarChart3, MousePointer, Eye, Users, Calendar, MoreVertical, Settings } from 'lucide-react';
+import { BarChart3, MousePointer, Eye, Users, Calendar, MoreVertical, Settings, ChevronRight } from 'lucide-react';
 import { formatCompactNumber } from '@/lib/utils';
 import type { CampaignGroup } from '@/hooks/useCampaignGroups';
 
@@ -162,7 +162,11 @@ export const CampaignGroupCard = memo(({ campaignGroup }: CampaignGroupCardProps
 
           <Separator />
 
-          {/* Ações removidas - card é totalmente clicável */}
+          {/* Navigation affordance */}
+          <div className="flex items-center justify-end gap-1 text-xs text-muted-foreground">
+            <span>Ver criativos</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </div>
         </div>
       </CardContent>
     </Card>

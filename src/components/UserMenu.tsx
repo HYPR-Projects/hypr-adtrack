@@ -46,11 +46,6 @@ export const UserMenu = () => {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem disabled className="gap-2">
-          <User className="w-4 h-4" />
-          Perfil (Em breve)
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
         <DropdownMenuItem 
           onClick={signOut}
           className="gap-2 text-red-600 focus:text-red-600"

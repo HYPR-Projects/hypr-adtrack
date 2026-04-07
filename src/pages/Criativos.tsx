@@ -369,6 +369,7 @@ const Criativos = () => {
 
   return (
     <AppLayout
+      title="Criativos"
       subtitle="Gerencie seus criativos e acompanhe métricas de tracking"
       breadcrumbs={breadcrumbItems}
       actions={actions}
@@ -440,6 +441,7 @@ const Criativos = () => {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
                   placeholder="Buscar criativos..."
+                  aria-label="Buscar criativos"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 w-full"

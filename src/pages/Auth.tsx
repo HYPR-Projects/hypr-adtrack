@@ -104,7 +104,7 @@ const Auth = () => {
           <div className="text-center space-y-2 lg:hidden">
             
             <img src="/lovable-uploads/34701aad-d67f-460e-9f6a-5c12858d6725.png" alt="HYPR Tracking" className="h-8 object-contain mx-auto" />
-            <p className="text-sm text-white/80">
+            <p className="text-sm text-white/90">
               Acesse sua conta para gerenciar campanhas
             </p>
           </div>
@@ -156,7 +156,7 @@ const Auth = () => {
                     const emailInput = document.getElementById('signin-email') as HTMLInputElement;
                     const email = emailInput?.value;
                     handleForgotPassword(email);
-                  }} disabled={loading} className="text-sm text-white/80 hover:text-white underline transition-colors disabled:opacity-50">
+                  }} disabled={loading} className="text-sm text-white/90 hover:text-white underline transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none rounded-sm">
                         Esqueci minha senha
                       </button>
                     </div>}
@@ -197,7 +197,7 @@ const Auth = () => {
 
           <div className="text-center space-y-2">
             <Separator className="mb-4 bg-white/20" />
-            <p className="text-xs text-white/70">
+            <p className="text-xs text-white/80">
               Apenas colaboradores HYPR com email @hypr.mobi podem acessar o sistema
             </p>
           </div>

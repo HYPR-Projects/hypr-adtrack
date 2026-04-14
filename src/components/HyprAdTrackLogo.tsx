@@ -38,7 +38,7 @@ export const HyprAdTrackLogo = ({ height = 28, variant = 'dark', className = '' 
         fontSize="1850"
         letterSpacing="-10"
       >
-        AdTrack
+        Ad<tspan fill={variant === 'light' ? '#FCFEFE' : '#1C262F'}>Track</tspan>
       </text>
     </svg>
   );

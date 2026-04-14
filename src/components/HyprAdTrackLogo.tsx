@@ -10,7 +10,7 @@ export const HyprAdTrackLogo = ({ height = 28, variant = 'dark', className = '' 
 
   return (
     <svg
-      viewBox="0 0 15400 1500"
+      viewBox="0 0 17000 1500"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
@@ -31,11 +31,11 @@ export const HyprAdTrackLogo = ({ height = 28, variant = 'dark', className = '' 
       {/* AdTrack text */}
       <text
         x="8900"
-        y="1100"
+        y="1180"
         fill={accent}
         fontFamily="'Urbanist', sans-serif"
         fontWeight="600"
-        fontSize="1150"
+        fontSize="1380"
         letterSpacing="-10"
       >
         AdTrack

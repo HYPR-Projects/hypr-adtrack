@@ -16,6 +16,8 @@ import { useCampaigns, type Tag } from "@/hooks/useCampaigns";
 import { useCampaignDetailsQuery } from "@/hooks/queries/useCampaignDetailsQuery";
 import { useInsertionOrders } from "@/hooks/useInsertionOrders";
 import { supabase } from "@/integrations/supabase/client";
+import { copyToClipboardSafe } from "@/lib/clipboard";
+import { Textarea } from "@/components/ui/textarea";
 
 interface DailyMetric {
   date: string;
@@ -54,6 +56,11 @@ const CampaignDetails = () => {
   const [isLoadingStats, setIsLoadingStats] = useState(false);
   
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [manualCopyDialog, setManualCopyDialog] = useState<{ open: boolean; text: string; label: string }>({
+    open: false,
+    text: "",
+    label: "",
+  });
   const currentInsertionOrder = useMemo(() => {
     if (!campaign?.insertion_order_id) return null;
     return insertionOrders.find(io => io.id === campaign.insertion_order_id);
@@ -227,12 +234,22 @@ const CampaignDetails = () => {
     );
   }
 
-  const copyToClipboard = (text: string, type: string) => {
-    navigator.clipboard.writeText(text);
-    toast({
-      title: "Copiado!",
-      description: `${type} copiado para a área de transferência`,
-    });
+  const copyToClipboard = async (text: string, type: string) => {
+    const ok = await copyToClipboardSafe(text);
+    if (ok) {
+      toast({
+        title: "Copiado!",
+        description: `${type} copiado para a área de transferência`,
+      });
+    } else {
+      // Ambas tentativas falharam — abre dialog com textarea pré-selecionado
+      setManualCopyDialog({ open: true, text, label: type });
+      toast({
+        title: "Cópia automática bloqueada",
+        description: "Copie manualmente na janela que abriu (Cmd/Ctrl+C).",
+        variant: "destructive",
+      });
+    }
   };
 
   const PROJECT_DOMAIN = 'wmwpzmpgaokjplhyyktv.supabase.co';
@@ -752,6 +769,59 @@ const CampaignDetails = () => {
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
       />
+
+      {/* Fallback manual quando clipboard API + execCommand falham */}
+      <Dialog
+        open={manualCopyDialog.open}
+        onOpenChange={(open) => setManualCopyDialog((s) => ({ ...s, open }))}
+      >
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Copie manualmente</DialogTitle>
+            <DialogDescription>
+              Seu navegador bloqueou a cópia automática. Selecione o texto abaixo e copie com Cmd+C (Mac) ou Ctrl+C (Windows).
+              {manualCopyDialog.label && (
+                <span className="block mt-1 text-xs text-muted-foreground">
+                  {manualCopyDialog.label}
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={manualCopyDialog.text}
+            readOnly
+            rows={6}
+            className="font-mono text-xs"
+            onFocus={(e) => e.currentTarget.select()}
+            onClick={(e) => e.currentTarget.select()}
+          />
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setManualCopyDialog((s) => ({ ...s, open: false }))}
+            >
+              Fechar
+            </Button>
+            <Button
+              onClick={async () => {
+                const ok = await copyToClipboardSafe(manualCopyDialog.text);
+                if (ok) {
+                  toast({ title: "Copiado!", description: "Tag copiada com sucesso." });
+                  setManualCopyDialog((s) => ({ ...s, open: false }));
+                } else {
+                  toast({
+                    title: "Ainda bloqueado",
+                    description: "Selecione o texto e use Cmd/Ctrl+C.",
+                    variant: "destructive",
+                  });
+                }
+              }}
+            >
+              Tentar copiar novamente
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 };
